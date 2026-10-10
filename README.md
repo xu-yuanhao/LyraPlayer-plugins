@@ -27,3 +27,5 @@ plugins/ffmpeg/build.sh
 FFmpeg 使用 LGPL 2.1 或更高版本，完整声明见 `plugins/ffmpeg/licenses`，上游为 https://ffmpeg.org/ 。修改与重建流程位于 `native/third_party/build_ffmpeg.sh`；发布同时提供对应修改后的 FFmpeg 源码附件。插件桥接源码在本仓库，可自行重建并替换。第三方组件沿用各自许可证；本次不变更 Lyra 主仓库的项目许可证。
 
 安装未经信任的原生插件意味着加载进程内代码。签名目录验证发布者、包 SHA-256 验证下载字节，不把原生插件描述成沙箱。
+
+新增官方插件只需增加并列的 `plugins/<名称>/`，其中 `catalog.json` 声明展示信息、兼容性、包名和下载镜像，`manifest.toml` 声明加载信息。通用目录生成器枚举这些描述，读取实际产物计算大小和 SHA-256，不在代码中按插件名分支。生成目录时使用本机私钥；日常同步运行 `scripts/sync.sh`，Git 凭据由本机凭据助手提供。Git 镜像不会自动复制 Release 附件，发布文件须分别上传两端。
