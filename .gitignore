@@ -1,0 +1,7 @@
+/dist/
+plugins/ffmpeg/native/third_party/ffmpeg/
+__pycache__/
+*.jks
+*.keystore
+*.pem
+signing.env

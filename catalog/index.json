@@ -1,0 +1,22 @@
+{
+  "plugins": [
+    {
+      "abi": 2,
+      "arch": "arm64-v8a",
+      "bytes": 713425,
+      "capability": "playback",
+      "description": "扩展音频格式支持，提供 APE、WavPack、ALAC 等解码能力。安装后使用 FFmpeg 播放，保留统一歌词、进度和背景律动。",
+      "id": "official.ffmpeg",
+      "platform": "android",
+      "sha256": "1b4625c0a7bd1b17444254dd52f3fee33c7bf774094a16431e4cba308e743655",
+      "tags": "ffmpeg 解码器 引擎 播放 ape wavpack alac flac mp3 aac vorbis opus 无损",
+      "title": "FFmpeg 播放引擎",
+      "urls": [
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.0.0/official.ffmpeg-1.0.0-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg/1.0.0/official.ffmpeg-1.0.0-android-arm64-v8a.zip"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "schema": 1
+}
