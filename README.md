@@ -29,3 +29,11 @@ FFmpeg 使用 LGPL 2.1 或更高版本，完整声明见 `plugins/ffmpeg/license
 安装未经信任的原生插件意味着加载进程内代码。签名目录验证发布者、包 SHA-256 验证下载字节，不把原生插件描述成沙箱。
 
 新增官方插件只需增加并列的 `plugins/<名称>/`，其中 `catalog.json` 声明展示信息、兼容性、包名和下载镜像，`manifest.toml` 声明加载信息。通用目录生成器枚举这些描述，读取实际产物计算大小和 SHA-256，不在代码中按插件名分支。生成目录时使用本机私钥；日常同步运行 `scripts/sync.sh`，Git 凭据由本机凭据助手提供。Git 镜像不会自动复制 Release 附件，发布文件须分别上传两端。
+
+## 插件展示信息
+
+`plugins/<name>/manifest.toml` 为加载信息；`catalog.json` 为展示/分发信息。支持名称、版本、简介、作者、作者主页、项目主页、许可证、标签、图标、Markdown 说明及更新记录。README/CHANGELOG 与图标随插件包保存。
+
+在 descriptor 中用 `readme: "README.md"`、`changelog: "CHANGELOG.md"` 和 `icon: "icon.png"` 引用同目录文件。`scripts/catalog.py` 会把 Markdown 和 PNG/WebP 内容纳入签名索引；自动计算 ZIP 的 `bytes/sha256`。不要手写伪造大小或摘要。下载镜像通过 `urls` 声明。
+
+FFmpeg 1.0.1 使用官网图标：https://ffmpeg.org/favicon.ico 。图标属于 FFmpeg 项目；插件维护者为 Xu YuanHao，底层 FFmpeg 作者为 FFmpeg contributors。

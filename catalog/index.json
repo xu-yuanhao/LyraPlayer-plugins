@@ -3,19 +3,28 @@
     {
       "abi": 2,
       "arch": "arm64-v8a",
-      "bytes": 713425,
+      "author": "Xu YuanHao / FFmpeg contributors",
+      "author_url": "https://github.com/xu-yuanhao",
+      "bytes": 717646,
       "capability": "playback",
+      "changelog": "# 1.0.1\n\n- 新增作者、官方 FFmpeg 图标、离线 Markdown 说明与更新记录。\n- 解码器及播放实现保持一致。\n",
+      "config": "",
       "description": "扩展音频格式支持，提供 APE、WavPack、ALAC 等解码能力。安装后使用 FFmpeg 播放，保留统一歌词、进度和背景律动。",
+      "entry": "plugin.so",
+      "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/ffmpeg",
+      "icon": "data:image/png;base64,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",
       "id": "official.ffmpeg",
+      "license": "LGPL-2.1-or-later",
       "platform": "android",
-      "sha256": "1b4625c0a7bd1b17444254dd52f3fee33c7bf774094a16431e4cba308e743655",
+      "readme": "# FFmpeg 播放引擎\n\n为 Lyra Player 提供 FFmpeg 7.1.1 音频解码能力。\n\n## 支持格式\n\n- MP3、FLAC、AAC、AAC LATM、ALAC\n- Vorbis、Opus、APE、WavPack\n- WAV 与现有 PCM 格式\n\n## 使用方式\n\n安装后通过公开播放接口接管解码，继续使用 Lyra 的音频输出时钟、歌词、进度记忆和背景律动。\n\n卸载后恢复系统解码。系统支持的格式因设备而异。\n\n## 作者与开源\n\n插件维护：Xu YuanHao。FFmpeg：FFmpeg contributors。\n\nFFmpeg 使用 LGPL-2.1-or-later；许可证随插件附带，完整插件源码与对应 FFmpeg 源码公开提供。\n\n[插件源码](https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/ffmpeg)\n\n[FFmpeg 官网](https://ffmpeg.org/)\n\n## 图标\n\n使用 FFmpeg 官网的图标，来源：https://ffmpeg.org/favicon.ico 。图标归 FFmpeg 项目所有，不表示 FFmpeg 项目为本插件背书。\n",
+      "sha256": "5be174bc659459b92f79f75f051812e3cf9ceaf3b46fb78bef9a936996370a9e",
       "tags": "ffmpeg 插件 plugin decoder 解码器 引擎 播放 ape wavpack alac flac mp3 aac vorbis opus 无损",
       "title": "FFmpeg 播放引擎",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.0.0/official.ffmpeg-1.0.0-android-arm64-v8a.zip",
-        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg/1.0.0/official.ffmpeg-1.0.0-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.0.1/official.ffmpeg-1.0.1-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg/1.0.1/official.ffmpeg-1.0.1-android-arm64-v8a.zip"
       ],
-      "version": "1.0.0"
+      "version": "1.0.1"
     }
   ],
   "schema": 1

@@ -206,3 +206,17 @@ typedef struct LyraPluginCatalogV2 {
     void (*refresh)(void *);
     int (*score)(void *,const char*,int32_t);
 } LyraPluginCatalogV2;
+
+// Optional extension: keeps the original catalog ABI/layout unchanged.
+#define LYRA_INTERFACE_PLUGIN_DETAILS 11u
+// UTF-8 text fields; text() returns required bytes including NUL, never
+// truncates. action: 0 install/update, 1 uninstall. installed identifies local
+// metadata.
+typedef struct LyraPluginDetailsV2 {
+  uint32_t size, version;
+  void *user;
+  int (*text)(void *, const char *id, const char *field, int installed, char *,
+              int);
+  int (*action)(void *, const char *id, int action);
+  int64_t (*icon_key)(void *, const char *id, int installed);
+} LyraPluginDetailsV2;

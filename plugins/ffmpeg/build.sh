@@ -14,13 +14,17 @@ mkdir -p "$root/dist/ffmpeg"
  -Wl,--gc-sections -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384 -laaudio -llog -lz -ldl -lm -o "$root/dist/ffmpeg/plugin.so"
 "$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded "$root/dist/ffmpeg/plugin.so"
 cp manifest.toml "$root/dist/ffmpeg/manifest.toml"
+cp icon.png README.md CHANGELOG.md "$root/dist/ffmpeg/"
+cp catalog.json "$root/dist/ffmpeg/metadata.json"
 cp licenses/FFmpeg-LGPL-2.1.txt "$root/dist/ffmpeg/LICENSE.txt"
 python3 - "$root" <<'PY'
 from pathlib import Path
 from zipfile import ZipFile,ZIP_DEFLATED
 import sys
-root=Path(sys.argv[1]);out=root/'dist/official.ffmpeg-1.0.0-android-arm64-v8a.zip'
+root=Path(sys.argv[1]);import json
+version=json.loads((root/'plugins/ffmpeg/catalog.json').read_text())['version']
+out=root/f'dist/official.ffmpeg-{version}-android-arm64-v8a.zip'
 with ZipFile(out,'w',ZIP_DEFLATED,compresslevel=9) as z:
- for n in ['manifest.toml','plugin.so','LICENSE.txt']:z.write(root/'dist/ffmpeg'/n,n)
+ for n in ['manifest.toml','plugin.so','LICENSE.txt','metadata.json','icon.png','README.md','CHANGELOG.md']:z.write(root/'dist/ffmpeg'/n,n)
 print(out)
 PY

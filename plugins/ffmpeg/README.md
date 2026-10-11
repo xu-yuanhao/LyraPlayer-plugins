@@ -1,7 +1,29 @@
-# official.ffmpeg
+# FFmpeg 播放引擎
 
-能力：`playback`。安装后通过宿主的服务替换与提供者生命周期接管播放。默认手机应用不含 FFmpeg 静态库。
+为 Lyra Player 提供 FFmpeg 7.1.1 音频解码能力。
 
-媒体 fd 在 OPEN 接受后由提供者接管，时间单位为微秒，快照包含音频时间和音频特征；PCM 写入线程发布实际进度事件供宿主记忆。停止、暂停、seek、恢复、EOF 均使用同一提供者。插件不读取 App 私有结构，不维护 UI 时间轴。
+## 支持格式
 
-内容：`manifest.toml`、`plugin.so` 和许可证。版本与索引资产名必须一致。这里的单个插件与仓库层公共 SDK 分开，其他插件可加入并列目录。
+- MP3、FLAC、AAC、AAC LATM、ALAC
+- Vorbis、Opus、APE、WavPack
+- WAV 与现有 PCM 格式
+
+## 使用方式
+
+安装后通过公开播放接口接管解码，继续使用 Lyra 的音频输出时钟、歌词、进度记忆和背景律动。
+
+卸载后恢复系统解码。系统支持的格式因设备而异。
+
+## 作者与开源
+
+插件维护：Xu YuanHao。FFmpeg：FFmpeg contributors。
+
+FFmpeg 使用 LGPL-2.1-or-later；许可证随插件附带，完整插件源码与对应 FFmpeg 源码公开提供。
+
+[插件源码](https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/ffmpeg)
+
+[FFmpeg 官网](https://ffmpeg.org/)
+
+## 图标
+
+使用 FFmpeg 官网的图标，来源：https://ffmpeg.org/favicon.ico 。图标归 FFmpeg 项目所有，不表示 FFmpeg 项目为本插件背书。
