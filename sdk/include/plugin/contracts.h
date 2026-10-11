@@ -188,7 +188,8 @@ typedef struct LyraConfigSchemaV2 {
 } LyraConfigSchemaV2;
 
 #define LYRA_INTERFACE_PLUGIN_CATALOG 10u
-// state: 0 available, 1 installed/current, 2 downloading, 3 installing, 4 update available.
+// state: 0 available, 1 installed/current, 2 downloading, 3 installing, 4
+// update available.
 typedef struct LyraPluginEntryV2 {
     uint32_t size, abi, state;
     uint64_t bytes;
@@ -221,3 +222,22 @@ typedef struct LyraPluginDetailsV2 {
   int (*action)(void *, const char *id, int action);
   int64_t (*icon_key)(void *, const char *id, int installed);
 } LyraPluginDetailsV2;
+
+// Optional classification rules, independent of the existing catalog layout.
+#define LYRA_INTERFACE_CLASSIFICATION_RULES 12u
+#define LYRA_MEDIA_TEXT_GENRE 3u
+#define LYRA_MEDIA_TEXT_FOLDER 4u
+#define LYRA_MEDIA_TEXT_PRIMARY_LYRICS 5u
+#define LYRA_MEDIA_TEXT_HAS_LYRICS 6u
+#define LYRA_MEDIA_TEXT_LANGUAGE_READY 7u
+typedef struct LyraClassificationRulesV2 {
+  uint32_t size, version;
+  void *user;
+  uint64_t (*revision)(void *);
+  // UTF-8 NUL-terminated, required bytes; insufficient buffers remain
+  // untouched.
+  int (*genres)(void *, const char *, char *, int); // newline-separated labels
+  int (*language)(void *, const char *primary_lyrics, const char *title,
+                  int has_lyrics, char *, int);
+  int (*language_label)(void *, const char *, char *, int);
+} LyraClassificationRulesV2;
