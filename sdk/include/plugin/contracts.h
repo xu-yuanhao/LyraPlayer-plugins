@@ -188,6 +188,7 @@ typedef struct LyraConfigSchemaV2 {
 } LyraConfigSchemaV2;
 
 #define LYRA_INTERFACE_PLUGIN_CATALOG 10u
+// state: 0 available, 1 installed/current, 2 downloading, 3 installing, 4 update available.
 typedef struct LyraPluginEntryV2 {
     uint32_t size, abi, state;
     uint64_t bytes;
