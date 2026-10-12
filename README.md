@@ -3,7 +3,7 @@
 统一维护官方插件源码、公共 ABI 头、构建脚本与发布目录，不为每个插件分开建仓库。
 
 - `plugins/<插件名>/`：源码、manifest、依赖构建脚本和第三方声明。
-- `sdk/include/plugin/`：固定版本的 C ABI 2 SDK。
+- `sdk/include/plugin/`：当前内测的 C ABI 3 SDK。
 - `catalog/index.json`、`index.sig`：软件读取的签名目录；更新目录必须重新签名。
 - `scripts/`：目录生成、签名及发布检查。
 - `dist/`：本机构建产物，不提交；正式插件包作为 Release 和 GitLab 包附件发布。
@@ -12,7 +12,7 @@ GitHub 是主开发仓库，GitLab 为相同提交与发布文件的镜像；镜
 
 ## 第一个插件：FFmpeg
 
-`official.ffmpeg`，ABI 2，Android arm64-v8a，替换播放提供者。主程序默认使用系统 MediaExtractor/MediaCodec 解码，插件使用 FFmpeg 7.1.1；保留 mp3、flac、aac、aac_latm、alac、vorbis、opus、ape、wavpack 和现有 PCM 解码器。二者输出统一的音频播放快照与音频特征。插件退出须先 STOP/quiesce，不能在旧工作线程仍活动时卸载。
+`official.ffmpeg`，ABI 3，Android arm64-v8a，替换播放提供者。主程序默认使用系统 MediaExtractor/MediaCodec 解码，插件使用 FFmpeg 7.1.1；保留 mp3、flac、aac、aac_latm、alac、vorbis、opus、ape、wavpack 和现有 PCM 解码器。二者输出统一的音频播放快照与音频特征。插件退出须先 STOP/quiesce，不能在旧工作线程仍活动时卸载。
 
 ```sh
 plugins/ffmpeg/build.sh

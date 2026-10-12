@@ -1,13 +1,13 @@
 {
   "plugins": [
     {
-      "abi": 2,
+      "abi": 3,
       "arch": "arm64-v8a",
       "author": "Xu YuanHao / FFmpeg contributors",
       "author_url": "https://github.com/xu-yuanhao",
-      "bytes": 717646,
+      "bytes": 717692,
       "capability": "playback",
-      "changelog": "# 1.0.1\n\n- 新增作者、官方 FFmpeg 图标、离线 Markdown 说明与更新记录。\n- 解码器及播放实现保持一致。\n",
+      "changelog": "# 1.1.0\n\n采用当前 ABI 3 插件契约；仅支持当前内测宿主，不提供旧 ABI 适配。解码格式保持不变。\n\n# 1.0.1\n\n- 新增作者、官方 FFmpeg 图标、离线 Markdown 说明与更新记录。\n- 解码器及播放实现保持一致。\n",
       "config": "",
       "description": "扩展音频格式支持，提供 APE、WavPack、ALAC 等解码能力。安装后使用 FFmpeg 播放，保留统一歌词、进度和背景律动。",
       "entry": "plugin.so",
@@ -17,14 +17,14 @@
       "license": "LGPL-2.1-or-later",
       "platform": "android",
       "readme": "# FFmpeg 播放引擎\n\n为 Lyra Player 提供 FFmpeg 7.1.1 音频解码能力。\n\n## 支持格式\n\n- MP3、FLAC、AAC、AAC LATM、ALAC\n- Vorbis、Opus、APE、WavPack\n- WAV 与现有 PCM 格式\n\n## 使用方式\n\n安装后通过公开播放接口接管解码，继续使用 Lyra 的音频输出时钟、歌词、进度记忆和背景律动。\n\n卸载后恢复系统解码。系统支持的格式因设备而异。\n\n## 作者与开源\n\n插件维护：Xu YuanHao。FFmpeg：FFmpeg contributors。\n\nFFmpeg 使用 LGPL-2.1-or-later；许可证随插件附带，完整插件源码与对应 FFmpeg 源码公开提供。\n\n[插件源码](https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/ffmpeg)\n\n[FFmpeg 官网](https://ffmpeg.org/)\n\n## 图标\n\n使用 FFmpeg 官网的图标，来源：https://ffmpeg.org/favicon.ico 。图标归 FFmpeg 项目所有，不表示 FFmpeg 项目为本插件背书。\n",
-      "sha256": "5be174bc659459b92f79f75f051812e3cf9ceaf3b46fb78bef9a936996370a9e",
+      "sha256": "7ad16164cc6d762b1e4659120e7d9ff20bec834e8787ddfc2f74555e36edc5c4",
       "tags": "ffmpeg 插件 plugin decoder 解码器 引擎 播放 ape wavpack alac flac mp3 aac vorbis opus 无损",
       "title": "FFmpeg 播放引擎",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.0.1/official.ffmpeg-1.0.1-android-arm64-v8a.zip",
-        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg/1.0.1/official.ffmpeg-1.0.1-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.1.0/official.ffmpeg-1.1.0-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg/1.1.0/official.ffmpeg-1.1.0-android-arm64-v8a.zip"
       ],
-      "version": "1.0.1"
+      "version": "1.1.0"
     }
   ],
   "schema": 1

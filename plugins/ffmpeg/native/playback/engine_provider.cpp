@@ -16,13 +16,13 @@ OwnedPlaybackBackend make_engine_backend() {
     api.size = sizeof(api);
     api.version = LYRA_INTERFACE_VERSION;
     api.user = backend;
-    api.snapshot = [](void *user, int64_t target, int32_t features, LyraPlaybackSnapshotV2 *result) {
+    api.snapshot = [](void *user, int64_t target, int32_t features, LyraPlaybackSnapshotV3 *result) {
         if (!result || result->size < sizeof(*result))
             return -1;
         *result = playback_export(static_cast<EngineBackend *>(user)->engine.snapshot(target, features));
         return 0;
     };
-    api.command = [](void *user, const LyraPlaybackCommandV2 *c) {
+    api.command = [](void *user, const LyraPlaybackCommandV3 *c) {
         if (!c || c->size < sizeof(*c))
             return -1;
         auto &engine = static_cast<EngineBackend *>(user)->engine;

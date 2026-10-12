@@ -6,15 +6,15 @@
 // Native-only ownership extension for the built-in engine. Plugin providers use
 // the C protocol; their lifetime is retained by the registry until quiescence.
 struct OwnedPlaybackBackend {
-    LyraPlaybackProviderV2 api{};
+    LyraPlaybackProviderV3 api{};
     void (*destroy)(void *) = nullptr;
     void (*attach_memory)(void *, ProgressMemory *) = nullptr;
     bool (*seek_failed)(void *) = nullptr;
     void (*underruns)(void *) = nullptr;
 };
 OwnedPlaybackBackend make_engine_backend();
-inline LyraPlaybackSnapshotV2 playback_export(const PlaybackSnapshot &s) {
-    LyraPlaybackSnapshotV2 out{};
+inline LyraPlaybackSnapshotV3 playback_export(const PlaybackSnapshot &s) {
+    LyraPlaybackSnapshotV3 out{};
     out.size = sizeof(out);
     out.flags = (s.active ? LYRA_PLAYBACK_ACTIVE : 0) | (s.paused ? LYRA_PLAYBACK_PAUSED : 0) |
                 (s.clock_ready ? LYRA_PLAYBACK_CLOCK_READY : 0) | (s.seeking ? LYRA_PLAYBACK_SEEKING : 0) |
@@ -37,7 +37,7 @@ inline LyraPlaybackSnapshotV2 playback_export(const PlaybackSnapshot &s) {
     out.accent = s.features.accent;
     return out;
 }
-inline PlaybackSnapshot playback_import(const LyraPlaybackSnapshotV2 &s) {
+inline PlaybackSnapshot playback_import(const LyraPlaybackSnapshotV3 &s) {
     PlaybackSnapshot out;
     out.track_id = s.track_id;
     out.position_us = s.position_us;
