@@ -1,0 +1,13 @@
+id = "official.netease"
+version = "1.0.0"
+abi = 3
+type = "media-data"
+entry = "plugin.so"
+title = "网易云免费音乐"
+author = "Xu YuanHao"
+author_url = "https://github.com/xu-yuanhao"
+homepage = "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/netease"
+license = "MIT"
+icon = "icon.png"
+readme = "README.md"
+changelog = "CHANGELOG.md"

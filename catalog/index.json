@@ -25,6 +25,32 @@
         "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg/1.1.1/official.ffmpeg-1.1.1-android-arm64-v8a.zip"
       ],
       "version": "1.1.1"
+    },
+    {
+      "abi": 3,
+      "arch": "arm64-v8a",
+      "author": "Xu YuanHao",
+      "author_url": "https://github.com/xu-yuanhao",
+      "bytes": 101476,
+      "capability": "media-data",
+      "changelog": "# 1.0.0\n\n- 首版：搜索框直搜网易云免费音乐（仅 `fee == 0`，VIP/付费跳过）。\n- 点播解析 https 直链，宿主下载后播放；封面与歌词按需加载。\n- 本地结果优先，在线结果追加；空查询与取消不产生网络请求。\n",
+      "config": "",
+      "description": "在搜索框直接搜网易云免费音乐并播放。只收录免费曲目，本地结果优先显示，在线结果追加在后。",
+      "entry": "plugin.so",
+      "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/netease",
+      "icon": "data:image/png;base64,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",
+      "id": "official.netease",
+      "license": "MIT",
+      "platform": "android",
+      "readme": "# 网易云免费音乐\n\n官方媒体数据插件（`official.netease`，ABI 3，Android arm64-v8a）。安装后直接在现有搜索框搜到网易云免费音乐并播放，不改主程序任何代码。\n\n## 行为\n\n- 在搜索框输入关键词，插件用同一查询搜网易云，**只收录免费曲目**（`fee == 0`），VIP 与付费专辑直接跳过，不会出现在结果里。\n- 排序由宿主决定：**本地结果优先显示，在线免费结果追加在后**，和本地资料库、插件市场条目混排，不断层。\n- 点一首在线结果：插件即时解析可播放直链（`music.163.com` 外链接口跟随 302，`music.126.net` 改写为 https），由系统下载器取回整文件再解码，播放、进度、歌词、背景律动和本地一致。\n- 封面取搜索接口的 `picUrl`，歌词取歌曲歌词接口（含译文合并），点歌时按需加载，不预取。\n- 空搜索不触发网络；换关键词时旧查询自动取消。\n\n## 隐私与来源\n\n- 只有在使用搜索框且已安装本插件时，查询关键词才会发往 `music.163.com`（搜索、直链、封面、歌词四个公开接口）。未安装时宿主不把搜索词发给任何服务器。\n- 使用网易云公开接口，未获网易授权；接口变更可能导致搜索或播放失败，属预期内波动。\n- 音频与图片版权归原权利人，本插件不存储、不转发。\n\n## 构建\n\n```sh\nplugins/netease/build.sh\n```\n\n需要 Android SDK/NDK 28.2.13676358。产物为 `dist/official.netease-1.0.0-android-arm64-v8a.zip`。解析器另有主机单测（真实抓包样本，不进包）：\n\n```sh\ncd plugins/netease/src\ng++ -std=c++17 -fno-exceptions -fno-rtti -Wall -Wextra -I. netease_json.cpp netease_json_test.cpp -o /tmp/netease_json_test\n/tmp/netease_json_test ./testdata\n```\n\n插件只用公开 C ABI 与 `host->java_vm` 网络，不链宿主私有符号；音频回调不调用插件。\n",
+      "sha256": "a7913f485523fb85cd6b9477f82619d68b4402279229cefafe9a5dd654d79194",
+      "tags": "网易云 netease 在线 online 免费 搜索 音乐 播放 解析 cloud music",
+      "title": "网易云免费音乐",
+      "urls": [
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/netease-v1.0.0/official.netease-1.0.0-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.netease/1.0.0/official.netease-1.0.0-android-arm64-v8a.zip"
+      ],
+      "version": "1.0.0"
     }
   ],
   "schema": 1
