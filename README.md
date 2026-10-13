@@ -39,3 +39,5 @@ FFmpeg 使用 LGPL 2.1 或更高版本，完整声明见 `plugins/ffmpeg/license
 FFmpeg 1.0.1 使用官网图标：https://ffmpeg.org/favicon.ico 。图标属于 FFmpeg 项目；插件维护者为 Xu YuanHao，底层 FFmpeg 作者为 FFmpeg contributors。
 
 平台调用声明在 sdk/android-platform-v1.json。使用 Android Activity 前检查 lyraPlatformVersion()==1；句柄稳定、撤销和借用指针规则见 service_contracts.h。本次 SDK 更新不改变 ABI 3 布局，FFmpeg 1.1.0 无需重新打包。
+
+可选剪贴板接口见 `sdk/include/plugin/clipboard_contracts.h`：通过 `system.clipboard` 服务查询 ID 19 的消息接口，版本与 size 精确匹配。现有 FFmpeg 1.1.1 不使用该能力，无需重新打包。
