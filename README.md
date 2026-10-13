@@ -41,3 +41,5 @@ FFmpeg 1.0.1 使用官网图标：https://ffmpeg.org/favicon.ico 。图标属于
 平台调用声明在 sdk/android-platform-v1.json。使用 Android Activity 前检查 lyraPlatformVersion()==1；句柄稳定、撤销和借用指针规则见 service_contracts.h。本次 SDK 更新不改变 ABI 3 布局，FFmpeg 1.1.0 无需重新打包。
 
 可选剪贴板接口见 `sdk/include/plugin/clipboard_contracts.h`：通过 `system.clipboard` 服务查询 ID 19 的消息接口，版本与 size 精确匹配。现有 FFmpeg 1.1.1 不使用该能力，无需重新打包。
+
+系统网页导航接口见 `sdk/include/plugin/link_contracts.h`：`system.links` 服务，ID 20，当前消息信封，URI 仅支持 http(s)。现有播放插件不依赖此新增接口。
