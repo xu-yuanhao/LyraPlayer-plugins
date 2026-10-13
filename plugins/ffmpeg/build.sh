@@ -7,8 +7,9 @@ ndk=$sdk/ndk/28.2.13676358
 compiler=$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++
 prefix=${LYRA_FFMPEG_PREFIX:-$PWD/native/third_party/ffmpeg/out}
 if [[ ! -f $prefix/lib/libavcodec.a ]]; then bash native/third_party/build_ffmpeg.sh; fi
+version=$(python3 -c 'import json,tomllib; d=json.load(open("catalog.json")); m=tomllib.load(open("manifest.toml","rb")); assert d["version"]==m["version"]; print(d["version"])')
 mkdir -p "$root/dist/ffmpeg"
-"$compiler" -std=c++17 -Oz -flto -shared -static-libstdc++ -fPIC -fno-exceptions -fno-rtti -fvisibility=hidden -ffunction-sections -fdata-sections -I native -I "$root/sdk/include" -I "$prefix/include" \
+"$compiler" "-DLYRA_PLUGIN_VERSION=\"$version\"" -std=c++17 -Oz -flto -shared -static-libstdc++ -fPIC -fno-exceptions -fno-rtti -fvisibility=hidden -ffunction-sections -fdata-sections -I native -I "$root/sdk/include" -I "$prefix/include" \
  src/plugin.cpp native/playback/{engine,engine_provider,audio_features,progress_memory}.cpp native/platform/android/{audio_output,log}.cpp \
  -Wl,--start-group "$prefix/lib/"{libavformat,libavcodec,libswresample,libavutil}.a -Wl,--end-group \
  -Wl,--gc-sections -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384 -laaudio -llog -lz -ldl -lm -o "$root/dist/ffmpeg/plugin.so"

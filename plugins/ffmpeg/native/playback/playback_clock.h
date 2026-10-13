@@ -31,9 +31,10 @@ struct PlaybackClockState {
         s.generation = generation; s.revision = revision; s.feature_epoch = feature_epoch;
         s.seek_serial = seek_serial; s.landed_seek = landed_seek;
         s.sample_rate = rate; s.active = active; s.paused = paused; s.clock_ready = timestamp_valid; s.seeking = seeking;
-        s.output_frame = paused || !active ? frozen_frame : (ready ? (timestamp_valid ? audio_presentation_frame(
+        bool pending_seek=seeking && landed_seek!=seek_serial;
+        s.output_frame = paused || !active || pending_seek ? frozen_frame : (ready ? (timestamp_valid ? audio_presentation_frame(
             rate, presented, stamp_ns, submitted, restart_frame, restart_ns, now, true) : restart_frame) : origin_frame);
-        if (active && !paused && ready) {
+        if (active && !paused && !pending_seek && ready) {
             // Hardware timestamps can correct interpolation slightly backwards.
             // Hold the last audio frame until the hardware catches up; do not
             // create a second, independently advancing media timer.
@@ -42,7 +43,7 @@ struct PlaybackClockState {
         }
         s.position_us = origin_us + audio_frames_us(std::max<int64_t>(0, s.output_frame - origin_frame), rate);
         s.position_us = pcm.position(s.output_frame, rate, s.position_us);
-        if (paused || !active) s.position_us = ready ? frozen_us : origin_us;
+        if (paused || !active || pending_seek) s.position_us = ready ? frozen_us : origin_us;
         if (duration_us > 0) s.position_us = std::min(s.position_us, duration_us);
         return s;
     }

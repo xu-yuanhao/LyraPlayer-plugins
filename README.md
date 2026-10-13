@@ -18,7 +18,7 @@ GitHub 是主开发仓库，GitLab 为相同提交与发布文件的镜像；镜
 plugins/ffmpeg/build.sh
 ```
 
-需要 Android SDK/NDK 28.2.13676358，以及构建脚本使用的主机工具。默认自动构建 FFmpeg；本机可设置 `LYRA_FFMPEG_PREFIX` 指向已有的同配置构建目录。产物为 `dist/official.ffmpeg-1.1.0-android-arm64-v8a.zip`。
+需要 Android SDK/NDK 28.2.13676358，以及构建脚本使用的主机工具。默认自动构建 FFmpeg；本机可设置 `LYRA_FFMPEG_PREFIX` 指向已有的同配置构建目录。产物为 `dist/official.ffmpeg-1.1.1-android-arm64-v8a.zip`。
 
 构建的桥接与播放辅助源码来自 LyraPlayer-native 的 c62b234，保持私有编译，不依赖宿主隐藏的 C++ 符号。公共跨库交互只使用 C ABI。平台输出代码编译在插件自身。
 

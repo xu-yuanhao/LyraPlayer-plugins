@@ -419,10 +419,14 @@ bool Engine::paused() const { return snapshot(0, false).paused; }
 void Engine::seek(int64_t ms, SeekOrigin origin) {
     if (ms < 0) ms = 0;
     seek_failed_.store(false, std::memory_order_release);
+    std::lock_guard<std::recursive_mutex> control(stream_mu_);
+    if(auto *audio=stream_.load(std::memory_order_acquire))
+        if(lyra::audio::state(audio)==lyra::audio::Started)lyra::audio::pause(audio);
     // The audible clock moves when the decoder lands, not when the request is posted.
     // Publishing the target here lets the lyric follower run ahead of the samples still in the speaker.
     PlaybackSnapshot before = clock_.access([&](PlaybackClockState& c) {
         auto s = c.sample(now_ns());
+        c.frozen_frame=s.output_frame;c.frozen_us=s.position_us;
         c.seeking = true; ++c.seek_serial;
         seek_origin_ = origin;
         seek_ms_.store(ms, std::memory_order_release);
@@ -682,7 +686,7 @@ void Engine::wait_for_drain() {
                     c.publish(presented, when, written, true);
                 });
                 memory_->update(raw_position_ms());
-                if (presented >= written) return;
+                if (clock_.access([&](const PlaybackClockState& c){return c.sample(now_ns()).output_frame;}) >= written) return;
             }
         }
         timespec delay{0, 20000000}; nanosleep(&delay, nullptr);
@@ -833,10 +837,13 @@ void Engine::decode_main() {
                                                 if (rc < 0) {
                                                     clock_.access([&](PlaybackClockState& c) {
                                                         if (c.seek_serial == serial) {
+                                                            c.restart(c.frozen_frame,now_ns());
                                                             c.seeking = false;
                                                             seek_failed_.store(true, std::memory_order_release);
                                                         }
                                                     });
+                                                    if (auto *audio=stream_.load(std::memory_order_acquire))
+                                                        if(!paused_.load(std::memory_order_acquire))lyra::audio::start(audio);
                                                     if (recover_output_.load(std::memory_order_acquire)) on_error(lyra::audio::ErrorInternal);
                                                     lyra_log(LyraLogInfo, "Lyra", "play seek fail %d", rc);
                                                     return;
