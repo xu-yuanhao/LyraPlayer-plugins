@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include "message_contracts.h"
 // Optional, instance-scoped service execution. No private C++ objects cross
 // ABI.
 #define LYRA_INTERFACE_SERVICE_CONTEXT 16u
@@ -11,6 +12,7 @@
 #define LYRA_SERVICE_SUPPLY 16u
 #define LYRA_SERVICE_FALLBACK_FRAME 32u
 #define LYRA_SERVICE_DEFAULT_ACTIVE 64u
+#define LYRA_SERVICE_REQUEST 128u
 struct LyraInput;
 struct LyraBox;
 typedef struct LyraServiceStateV3 {
@@ -23,6 +25,10 @@ typedef struct LyraServiceContextV3 {
   void *user;
   uint64_t (*lookup)(void *, const char *);
   uint64_t (*current)(void *);
+  uint32_t (*count)(void *);
+  uint64_t (*at)(void *, uint32_t);
+  uint64_t (*publish)(void *, const LyraCapabilityV3 *);
+  int (*request)(void *, uint64_t, const LyraMessageV3 *, LyraReplyV3 *);
   int (*describe)(void *, uint64_t, LyraServiceStateV3 *);
   int (*frame)(void *, uint64_t, uint32_t implementation, int64_t,
                const struct LyraBox *);
