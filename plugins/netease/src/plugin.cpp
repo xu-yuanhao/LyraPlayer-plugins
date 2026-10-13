@@ -1,17 +1,21 @@
 // Netease free-music media provider (official.netease, ABI 3).
 //
-// A pure LyraMediaProviderV3: it answers SEARCH/AUDIO/COVER/LYRICS from the
-// public Netease endpoints and never replaces a built-in service. Search
-// results carry only free tracks (fee == 0); VIP/paid tracks are skipped at
-// parse time, so they never reach the host. Local results keep their order:
-// the host appends provider rows after local matches.
+// A pure LyraMediaProviderV3: it answers SEARCH/AUDIO/COVER/LYRICS and never
+// replaces a built-in service. Transports follow the maintained
+// interface.music.163.com routes (plain form POST for search/lyric/detail,
+// anonymous eapi for the play url); the retired music.163.com GET scritps
+// are gone. Search results carry only free tracks (fee == 0); a second
+// full-source check at play time rejects trial/VIP urls even if the search
+// flags ever lie. Local results keep their order: the host appends provider
+// rows after local matches.
 //
 // Networking runs on three worker threads through JNI HttpURLConnection
-// (system TLS, no bundled crypto). Only the JavaVM is cached; the Activity
-// is used once to resolve the cache dir path and never retained. Audio and
-// cover bytes are never proxied: AUDIO/COVER resolve to an https url and the
-// host's verified downloader fetches the file. Lyrics are small text, so the
-// LYRICS handler writes them to an unlinked temp file and transfers the fd.
+// (system TLS, no bundled crypto; the small MD5/AES primitives live in
+// crypto.cpp). Only the JavaVM is cached; the Activity is used once to
+// resolve the cache dir path and never retained. Audio and cover bytes are
+// never proxied: AUDIO/COVER resolve to an https url and the host's verified
+// downloader fetches the file. Lyrics are small text, so the LYRICS handler
+// writes them to an unlinked temp file and transfers the fd.
 #include "plugin/lyra_plugin.h"
 
 #include <fcntl.h>
@@ -22,6 +26,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <mutex>
 #include <queue>
 #include <string>
@@ -29,6 +34,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "crypto.h"
 #include "net_http.h"
 #include "netease_json.h"
 
@@ -53,6 +59,8 @@ struct Task {
 struct PluginState {
     JavaVM *vm = nullptr;
     std::string cache_dir;
+    std::string device_id;  // anonymous session identity, one per lifetime
+    std::string nuid;
     std::mutex mutex;
     std::condition_variable cv;
     std::queue<Task> pending;
@@ -100,22 +108,51 @@ std::string SongIdFromUid(const std::string &uid) {
     return netease::IsDigits(id) ? id : std::string();
 }
 
-std::string SearchUrl(const std::string &query) {
-    return "https://music.163.com/api/cloudsearch/pc?s=" +
-           netease::UrlEncode(query) + "&type=1&offset=0&limit=10";
+std::string SearchBody(const std::string &query) {
+    return "s=" + netease::UrlEncode(query) + "&type=1&limit=10&offset=0";
 }
 
-std::string OuterUrl(const std::string &song_id) {
-    return "https://music.163.com/song/media/outer/url?id=" + song_id + ".mp3";
+std::string LyricBody(const std::string &song_id) {
+    return "id=" + song_id +
+           "&cp=false&tv=0&lv=0&rv=0&kv=0&yv=0&ytv=0&yrv=0";
 }
 
-std::string DetailUrl(const std::string &song_id) {
-    return "https://music.163.com/api/song/detail?ids=%5B" + song_id + "%5D";
+std::string DetailBody(const std::string &song_id) {
+    return "c=" + netease::UrlEncode("[{\"id\":\"" + song_id + "\"}]");
 }
 
-std::string LyricUrl(const std::string &song_id) {
-    return "https://music.163.com/api/song/lyric?id=" + song_id +
-           "&lv=1&kv=1&tv=-1";
+// Anonymous desktop-profile cookie (no MUSIC_U): enough for search/url.
+std::string SessionCookie() {
+    std::lock_guard<std::mutex> lock(g_state.mutex);
+    const std::string &device = g_state.device_id;
+    const std::string &nuid = g_state.nuid;
+    char buf[1024];
+    std::snprintf(
+        buf, sizeof(buf),
+        "os=pc; appver=3.0.18.203152; "
+        "osver=Microsoft-Windows-10-Professional-build-22631-64bit; "
+        "channel=netease; versioncode=6006066; mobilename=Mi+A3; "
+        "buildver=1768990079; resolution=2268x1080; deviceId=%s; "
+        "brand=Xiaomi; ntes_kaola_ad=1; _ntes_nuid=%s; WEVNSM=1.0.0; "
+        "__csrf=40ab38f0a305fc4c7ff68e636bcf34aa",
+        device.c_str(), nuid.c_str());
+    return std::string(buf);
+}
+
+std::string PlayUrlBody(const std::string &song_id) {
+    std::lock_guard<std::mutex> lock(g_state.mutex);
+    const std::string device = g_state.device_id;
+    uint64_t ms = static_cast<uint64_t>(std::time(nullptr)) * 1000u;
+    char req_id[64];
+    std::snprintf(req_id, sizeof(req_id), "%llu_%04u",
+                  static_cast<unsigned long long>(ms),
+                  static_cast<unsigned>(ms % 10000u));
+    std::string body =
+        "{\"ids\":\"[" + song_id +
+        "]\",\"level\":\"standard\",\"encodeType\":\"mp3\",\"header\":" +
+        netease::EapiHeaderJson(device, req_id) + ",\"e_r\":false}";
+    return "params=" +
+           netease::EapiParams("/api/song/enhance/player/url/v1", body);
 }
 
 std::string WithCoverParams(const std::string &cover) {
@@ -157,14 +194,25 @@ void ResolveError(const Task &task) {
     task.sink.resolved(task.sink.user, &resource);
 }
 
+namespace {
+const char *kSearchEndpoint = "https://interface.music.163.com/api/search/get/";
+const char *kPlayUrlEndpoint =
+    "https://interface.music.163.com/eapi/song/enhance/player/url/v1";
+const char *kLyricEndpoint =
+    "https://interface.music.163.com/api/song/lyric/v1";
+const char *kDetailEndpoint =
+    "https://interface.music.163.com/api/v3/song/detail";
+}  // namespace
+
 void HandleSearch(const Task &task) {
     if (task.query.empty()) {
         PublishEmpty(task);
         return;
     }
+    std::string form = SearchBody(task.query);
     netease::HttpResponse res;
-    if (netease::HttpGet(g_state.vm, SearchUrl(task.query).c_str(), 10000,
-                         10000, 262144, false, &res) != 0 ||
+    if (netease::HttpPost(g_state.vm, kSearchEndpoint, form.c_str(), nullptr,
+                          10000, 10000, 262144, &res) != 0 ||
         res.body.empty()) {
         PublishError(task);
         return;
@@ -228,17 +276,27 @@ void HandleAudio(const Task &task) {
         ResolveError(task);
         return;
     }
-    std::string page = OuterUrl(song_id);
+    std::string form = PlayUrlBody(song_id);
+    std::string cookie = SessionCookie();
     netease::HttpResponse res;
-    if (netease::HttpGet(g_state.vm, page.c_str(), 10000, 15000, 16384, true,
-                         &res) != 0 ||
-        res.final_url.empty() || res.final_url == page) {
-        // No redirect to a media file: the page itself is not playable.
+    if (netease::HttpPost(g_state.vm, kPlayUrlEndpoint, form.c_str(),
+                          cookie.c_str(), 10000, 15000, 65536, &res) != 0 ||
+        res.body.empty()) {
         ResolveError(task);
         return;
     }
     if (WasCancelled(task.request_id)) return;
-    std::string playable = netease::ToHttps126(res.final_url);
+    // The play-url answer may itself be eapi-encrypted: decode first.
+    std::string payload = netease::EapiDecode(
+        reinterpret_cast<const uint8_t *>(res.body.data()), res.body.size());
+    if (payload.empty()) {
+        ResolveError(task);
+        return;
+    }
+    // Full-source gate: id match, code 200, real url, no trial object.
+    std::string playable =
+        netease::ToHttps126(netease::ParsePlayUrl(payload.data(),
+                                                 payload.size(), song_id));
     if (playable.compare(0, 8, "https://") != 0) {
         ResolveError(task);  // host downloads https only
         return;
@@ -259,9 +317,11 @@ void HandleCover(const Task &task) {
     if (cover.empty()) {
         std::string song_id = SongIdFromUid(task.uid);
         if (!song_id.empty()) {
+            std::string form = DetailBody(song_id);
             netease::HttpResponse res;
-            if (netease::HttpGet(g_state.vm, DetailUrl(song_id).c_str(), 10000,
-                                 10000, 65536, false, &res) == 0 &&
+            if (netease::HttpPost(g_state.vm, kDetailEndpoint, form.c_str(),
+                                  nullptr, 10000, 10000, 65536,
+                                  &res) == 0 &&
                 !res.body.empty()) {
                 std::vector<netease::SongInfo> songs;
                 if (netease::ParseSongs(res.body.data(), res.body.size(),
@@ -296,9 +356,10 @@ void HandleLyrics(const Task &task) {
         ResolveError(task);
         return;
     }
+    std::string form = LyricBody(song_id);
     netease::HttpResponse res;
-    if (netease::HttpGet(g_state.vm, LyricUrl(song_id).c_str(), 10000, 10000,
-                         1048576, false, &res) != 0 ||
+    if (netease::HttpPost(g_state.vm, kLyricEndpoint, form.c_str(), nullptr,
+                          10000, 10000, 1048576, &res) != 0 ||
         res.body.empty()) {
         ResolveError(task);
         return;
@@ -481,6 +542,8 @@ done:
 int PluginInit(const LyraHostV3 *host) {
     if (!host || !host->java_vm) return -1;
     g_state.vm = static_cast<JavaVM *>(host->java_vm);
+    g_state.device_id = netease::RandomId(32);
+    g_state.nuid = netease::RandomId(32);
     std::string dir =
         QueryCacheDir(g_state.vm, host->android_context);
     if (dir.empty()) {

@@ -8,8 +8,8 @@ compiler=$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-
 version=$(python3 -c 'import json,tomllib; d=json.load(open("catalog.json")); m=tomllib.load(open("manifest.toml","rb")); assert d["version"]==m["version"]; print(d["version"])')
 mkdir -p "$root/dist/netease"
 "$compiler" "-DLYRA_PLUGIN_VERSION=\"$version\"" -std=c++17 -Oz -flto -shared -static-libstdc++ -fPIC -fno-exceptions -fno-rtti -fvisibility=hidden -ffunction-sections -fdata-sections -I src -I "$root/sdk/include" \
- src/plugin.cpp src/net_http.cpp src/netease_json.cpp \
- -Wl,--gc-sections -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384 -llog -o "$root/dist/netease/plugin.so"
+ src/plugin.cpp src/net_http.cpp src/netease_json.cpp src/crypto.cpp \
+ -Wl,--gc-sections -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384 -llog -lz -o "$root/dist/netease/plugin.so"
 "$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded "$root/dist/netease/plugin.so"
 cp manifest.toml "$root/dist/netease/manifest.toml"
 cp icon.png README.md CHANGELOG.md "$root/dist/netease/"

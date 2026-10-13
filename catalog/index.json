@@ -31,9 +31,9 @@
       "arch": "arm64-v8a",
       "author": "Xu YuanHao",
       "author_url": "https://github.com/xu-yuanhao",
-      "bytes": 101476,
+      "bytes": 109305,
       "capability": "media-data",
-      "changelog": "# 1.0.0\n\n- 首版：搜索框直搜网易云免费音乐（仅 `fee == 0`，VIP/付费跳过）。\n- 点播解析 https 直链，宿主下载后播放；封面与歌词按需加载。\n- 本地结果优先，在线结果追加；空查询与取消不产生网络请求。\n",
+      "changelog": "# 1.1.0\n\n- 传输整体切换到 `interface.music.163.com` 现行路由：搜索与详情、歌词走普通 form POST，直链走匿名 eapi（`player/url/v1`，AES-128-ECB），退役旧 `music.163.com` GET 爬取与外链跟随。\n- 播放前增加完整源鉴别（id 一致、code 200、有直链、无试听对象），试听/VIP 片段不再进播放器。\n- 封面改用 `picId` 官方拼接（含详情回退），歌词接口改用 `lyric/v1`。\n\n# 1.0.0\n\n- 首版：搜索框直搜网易云免费音乐（仅 `fee == 0`，VIP/付费跳过）。\n- 点播解析 https 直链，宿主下载后播放；封面与歌词按需加载。\n- 本地结果优先，在线结果追加；空查询与取消不产生网络请求。\n",
       "config": "",
       "description": "在搜索框直接搜网易云免费音乐并播放。只收录免费曲目，本地结果优先显示，在线结果追加在后。",
       "entry": "plugin.so",
@@ -42,15 +42,15 @@
       "id": "official.netease",
       "license": "MIT",
       "platform": "android",
-      "readme": "# 网易云免费音乐\n\n官方媒体数据插件（`official.netease`，ABI 3，Android arm64-v8a）。安装后直接在现有搜索框搜到网易云免费音乐并播放，不改主程序任何代码。\n\n## 行为\n\n- 在搜索框输入关键词，插件用同一查询搜网易云，**只收录免费曲目**（`fee == 0`），VIP 与付费专辑直接跳过，不会出现在结果里。\n- 排序由宿主决定：**本地结果优先显示，在线免费结果追加在后**，和本地资料库、插件市场条目混排，不断层。\n- 点一首在线结果：插件即时解析可播放直链（`music.163.com` 外链接口跟随 302，`music.126.net` 改写为 https），由系统下载器取回整文件再解码，播放、进度、歌词、背景律动和本地一致。\n- 封面取搜索接口的 `picUrl`，歌词取歌曲歌词接口（含译文合并），点歌时按需加载，不预取。\n- 空搜索不触发网络；换关键词时旧查询自动取消。\n\n## 隐私与来源\n\n- 只有在使用搜索框且已安装本插件时，查询关键词才会发往 `music.163.com`（搜索、直链、封面、歌词四个公开接口）。未安装时宿主不把搜索词发给任何服务器。\n- 使用网易云公开接口，未获网易授权；接口变更可能导致搜索或播放失败，属预期内波动。\n- 音频与图片版权归原权利人，本插件不存储、不转发。\n\n## 构建\n\n```sh\nplugins/netease/build.sh\n```\n\n需要 Android SDK/NDK 28.2.13676358。产物为 `dist/official.netease-1.0.0-android-arm64-v8a.zip`。解析器另有主机单测（真实抓包样本，不进包）：\n\n```sh\ncd plugins/netease/src\ng++ -std=c++17 -fno-exceptions -fno-rtti -Wall -Wextra -I. netease_json.cpp netease_json_test.cpp -o /tmp/netease_json_test\n/tmp/netease_json_test ./testdata\n```\n\n插件只用公开 C ABI 与 `host->java_vm` 网络，不链宿主私有符号；音频回调不调用插件。\n",
-      "sha256": "a7913f485523fb85cd6b9477f82619d68b4402279229cefafe9a5dd654d79194",
+      "readme": "# 网易云免费音乐\n\n官方媒体数据插件（`official.netease`，ABI 3，Android arm64-v8a）。安装后直接在现有搜索框搜到网易云免费音乐并播放，不改主程序任何代码。\n\n## 行为\n\n- 在搜索框输入关键词，插件用同一查询搜网易云，**只收录免费曲目**（`fee == 0`），VIP 与付费专辑直接跳过，不会出现在结果里。\n- 排序由宿主决定：**本地结果优先显示，在线免费结果追加在后**，和本地资料库、插件市场条目混排，不断层。\n- 点一首在线结果：插件经匿名 eapi 取完整直链（双重鉴别：搜索 `fee` + 播放源 `code/url/试听对象`），由系统下载器取回整文件再解码，播放、进度、歌词、背景律动和本地一致。\n- 封面取 `picId` 官方拼接，歌词取 `lyric/v1`（含译文合并），点歌时按需加载，不预取。\n- 空搜索不触发网络；换关键词时旧查询自动取消。\n\n## 隐私与来源\n\n- 只有在使用搜索框且已安装本插件时，查询关键词才会发往网易接口（搜索、直链、封面、歌词四个路由）。未安装时宿主不把搜索词发给任何服务器。\n- 传输路线参考开源项目 NEORUAA/MeiloX（GPL-3.0）验证过的现行匿名路由实现，代码为本插件独立编写，未复制其源码；MD5/AES 为公开算法标准实现。\n- 使用网易云公开接口，未获网易授权；接口变更可能导致搜索或播放失败，属预期内波动。\n- 音频与图片版权归原权利人，本插件不存储、不转发。\n\n## 构建\n\n```sh\nplugins/netease/build.sh\n```\n\n需要 Android SDK/NDK 28.2.13676358。产物为 `dist/official.netease-1.1.0-android-arm64-v8a.zip`。解析器与密码原语另有主机单测（真实抓包样本，不进包）：\n\n```sh\ncd plugins/netease/src\ng++ -std=c++17 -fno-exceptions -fno-rtti -Wall -Wextra -I. netease_json.cpp crypto.cpp netease_json_test.cpp -lz -o /tmp/netease_json_test\n/tmp/netease_json_test ./testdata\ng++ -std=c++17 -fno-exceptions -fno-rtti -Wall -Wextra -I. crypto.cpp crypto_test.cpp -lz -o /tmp/crypto_test\n/tmp/crypto_test\n```\n\n插件只用公开 C ABI 与 `host->java_vm` 网络，不链宿主私有符号；音频回调不调用插件。\n",
+      "sha256": "9e78fbe3ab406407b181180dd16b7bf71ddbd55f2b4972765c760698ce892e03",
       "tags": "网易云 netease 在线 online 免费 搜索 音乐 播放 解析 cloud music",
       "title": "网易云免费音乐",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/netease-v1.0.0/official.netease-1.0.0-android-arm64-v8a.zip",
-        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.netease/1.0.0/official.netease-1.0.0-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/netease-v1.1.0/official.netease-1.1.0-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.netease/1.1.0/official.netease-1.1.0-android-arm64-v8a.zip"
       ],
-      "version": "1.0.0"
+      "version": "1.1.0"
     }
   ],
   "schema": 1

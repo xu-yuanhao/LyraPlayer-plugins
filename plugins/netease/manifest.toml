@@ -1,5 +1,5 @@
 id = "official.netease"
-version = "1.0.0"
+version = "1.1.0"
 abi = 3
 type = "media-data"
 entry = "plugin.so"

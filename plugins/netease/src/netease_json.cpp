@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "crypto.h"
+
 namespace netease {
 namespace {
 
@@ -347,6 +349,19 @@ int ParseSongs(const char *json, size_t len, std::vector<SongInfo> &out,
             FieldObject(o, on, "album", &ab, &ae)) {
             song.album = FieldStr(o + ab, ae - ab, "name");
             song.cover = FieldStr(o + ab, ae - ab, "picUrl");
+            if (song.cover.empty()) {
+                // Newer search/detail shapes carry a numeric pic id; the
+                // cover url is derived with the public cover recipe.
+                bool has_pic = false;
+                long long pic = FieldNum(o + ab, ae - ab, "pic", &has_pic);
+                if (!has_pic) pic = FieldNum(o + ab, ae - ab, "picId",
+                                             &has_pic);
+                if (has_pic && pic > 0) {
+                    char idbuf[32];
+                    std::snprintf(idbuf, sizeof(idbuf), "%lld", pic);
+                    song.cover = CoverLink(idbuf);
+                }
+            }
         }
         if (song.cover.empty()) song.cover = FieldStr(o, on, "picUrl");
         bool has_dt = false;
@@ -360,8 +375,7 @@ int ParseSongs(const char *json, size_t len, std::vector<SongInfo> &out,
     return appended;
 }
 
-int ParseLyric(const char *json, size_t len, std::string &lrc_out) {
-    lrc_out.clear();
+int ParseLyric(const char *json, size_t len, std::string &lrc_out) {    lrc_out.clear();
     if (!json || len == 0) return -1;
     std::string base, trans;
     for (int pass = 0; pass < 2; ++pass) {
@@ -487,6 +501,63 @@ bool IsDigits(const std::string &s) {
         if (c < '0' || c > '9') return false;
     }
     return true;
+}
+
+std::string ParsePlayUrl(const char *json, size_t len,
+                         const std::string &expected_id) {
+    if (!json || len == 0 || expected_id.empty()) return std::string();
+    size_t q = FindKeyAt(json, len, 0, "data", -1);
+    if (q == kNpos) return std::string();
+    size_t v = ColonValue(json, len, q, 4);
+    if (v == kNpos || v >= len || json[v] != '[') return std::string();
+    size_t arr_end = MatchBracket(json, len, v);
+    if (arr_end == kNpos) return std::string();
+    size_t i = v + 1;
+    while (i < arr_end) {
+        i = SkipWs(json, len, i);
+        if (i >= arr_end) break;
+        if (json[i] != '{') {
+            ++i;
+            continue;
+        }
+        size_t obj_end = MatchBracket(json, len, i);
+        if (obj_end == kNpos || obj_end > arr_end) break;
+        const char *o = json + i;
+        size_t on = obj_end - i;
+        bool has_id = false, has_code = false;
+        long long id = FieldNum(o, on, "id", &has_id);
+        long long code = FieldNum(o, on, "code", &has_code);
+        char idbuf[32];
+        std::snprintf(idbuf, sizeof(idbuf), "%lld", id);
+        bool id_ok = has_id && expected_id == idbuf;
+        if (!id_ok || !has_code || code != 200) {
+            i = obj_end;
+            continue;
+        }
+        std::string url = FieldStr(o, on, "url");
+        if (url.empty()) {
+            i = obj_end;
+            continue;
+        }
+        // A trial source carries a freeTrialInfo object; full sources have
+        // an explicit null. Anything else is not playable anonymously.
+        size_t tq = FindKey(o, on, 0, "freeTrialInfo");
+        if (tq == kNpos) {
+            i = obj_end;
+            continue;
+        }
+        size_t tv = ColonValue(o, on, tq, 13);
+        if (tv == kNpos || tv >= on) {
+            i = obj_end;
+            continue;
+        }
+        if (!(on - tv >= 4 && std::memcmp(o + tv, "null", 4) == 0)) {
+            i = obj_end;  // trial object present: skip, keep scanning
+            continue;
+        }
+        return url;
+    }
+    return std::string();
 }
 
 }  // namespace netease

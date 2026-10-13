@@ -1,17 +1,17 @@
 {
   "id": "official.netease",
   "title": "网易云免费音乐",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "abi": 3,
   "platform": "android",
   "arch": "arm64-v8a",
   "capability": "media-data",
   "description": "在搜索框直接搜网易云免费音乐并播放。只收录免费曲目，本地结果优先显示，在线结果追加在后。",
   "tags": "网易云 netease 在线 online 免费 搜索 音乐 播放 解析 cloud music",
-  "package": "official.netease-1.0.0-android-arm64-v8a.zip",
+  "package": "official.netease-1.1.0-android-arm64-v8a.zip",
   "urls": [
-    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/netease-v1.0.0/official.netease-1.0.0-android-arm64-v8a.zip",
-    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.netease/1.0.0/official.netease-1.0.0-android-arm64-v8a.zip"
+    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/netease-v1.1.0/official.netease-1.1.0-android-arm64-v8a.zip",
+    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.netease/1.1.0/official.netease-1.1.0-android-arm64-v8a.zip"
   ],
   "author": "Xu YuanHao",
   "author_url": "https://github.com/xu-yuanhao",

@@ -1,6 +1,6 @@
 // Host unit test for netease_json.cpp. Uses real captured payloads.
 // Build: g++ -std=c++17 -fno-exceptions -fno-rtti -Wall -Wextra -I. \
-//   netease_json.cpp netease_json_test.cpp -o /tmp/netease_json_test
+//   netease_json.cpp crypto.cpp netease_json_test.cpp -o /tmp/netease_json_test
 #include <cassert>
 #include <cstdio>
 #include <cstring>
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     assert(argc == 2);
     std::string dir = argv[1];
 
-    // 1. cloudsearch: only fee==0 songs survive, metadata intact.
+    // 1. search/get: only fee==0 songs survive, metadata intact.
     {
         std::string body = ReadFile((dir + "/search.json").c_str());
         std::vector<netease::SongInfo> songs;
@@ -48,17 +48,24 @@ int main(int argc, char **argv) {
             Expect(s.fee == 0, "no VIP/paid song published");
             Expect(!s.id.empty() && netease::IsDigits(s.id), "numeric id");
             Expect(!s.title.empty(), "title present");
-            Expect(s.duration_ms >= 0, "duration sane");
+            Expect(!s.artist.empty(), "artist present");
+            Expect(s.duration_ms > 0, "duration from search/get");
         }
         bool has_cover = false;
         for (const auto &s : songs)
             if (!s.cover.empty()) has_cover = true;
-        Expect(has_cover, "at least one cover url");
+        Expect(has_cover, "picId cover derived");
+        for (const auto &s : songs)
+            if (!s.cover.empty())
+                Expect(s.cover.compare(0, 7, "http://") == 0 &&
+                           s.cover.find(".music.126.net") !=
+                               std::string::npos,
+                       "cover is a 126 url");
         std::printf("  first: %s / %s [%s]\n", songs[0].title.c_str(),
                     songs[0].artist.c_str(), songs[0].id.c_str());
     }
 
-    // 2. song/detail shares the same song object shape ("artists").
+    // 2. v3 song/detail shares the same song object shape ("artists").
     {
         std::string body = ReadFile((dir + "/detail.json").c_str());
         std::vector<netease::SongInfo> songs;
@@ -67,6 +74,27 @@ int main(int argc, char **argv) {
         Expect(songs[0].id == "3362265838", "detail id");
         Expect(songs[0].artist == "潮汕家丁", "detail artist");
         Expect(!songs[0].cover.empty(), "detail cover");
+    }
+
+    // 2b. player/url/v1: full source accepted, VIP/trial rejected.
+    {
+        std::string free_body = ReadFile((dir + "/url_free.json").c_str());
+        std::string url = netease::ParsePlayUrl(
+            free_body.data(), free_body.size(), "3362265838");
+        Expect(!url.empty(), "free track has playable url");
+        Expect(url.find("music.126.net") != std::string::npos,
+               "play url points at 126");
+        Expect(netease::ParsePlayUrl(free_body.data(), free_body.size(),
+                                     "99999")
+                   .empty(),
+               "wrong id rejected");
+        std::string vip_body = ReadFile((dir + "/url_vip.json").c_str());
+        Expect(netease::ParsePlayUrl(vip_body.data(), vip_body.size(),
+                                     "1357375695")
+                   .empty(),
+               "VIP track has no playable url");
+        Expect(netease::ParsePlayUrl("{}", 2, "1").empty(),
+               "empty url payload rejected");
     }
 
     // 3. lyric: base + translation merged, valid LRC.

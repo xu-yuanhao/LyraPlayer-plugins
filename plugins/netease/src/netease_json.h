@@ -29,6 +29,13 @@ int ParseSongs(const char *json, size_t len, std::vector<SongInfo> &out,
 // lyric. Returns 0 on syntactically valid JSON, -1 otherwise.
 int ParseLyric(const char *json, size_t len, std::string &lrc_out);
 
+// Parse a song/enhance/player/url/v1 payload. Returns the playable url of
+// the first full (non-trial) source for expected_id, or "" when none exists.
+// A source counts as full only when its id matches, code == 200, url is
+// non-empty and freeTrialInfo is null.
+std::string ParsePlayUrl(const char *json, size_t len,
+                         const std::string &expected_id);
+
 // Rewrite http://*.music.126.net to https:// (verified reachable).
 // Other urls are returned unchanged.
 std::string ToHttps126(const std::string &url);
