@@ -18,7 +18,7 @@ GitHub 是主开发仓库，GitLab 为相同提交与发布文件的镜像；镜
 plugins/ffmpeg/build.sh
 ```
 
-需要 Android SDK/NDK 28.2.13676358，以及构建脚本使用的主机工具。默认自动构建 FFmpeg；本机可设置 `LYRA_FFMPEG_PREFIX` 指向已有的同配置构建目录。产物为 `dist/official.ffmpeg-1.0.0-android-arm64-v8a.zip`。
+需要 Android SDK/NDK 28.2.13676358，以及构建脚本使用的主机工具。默认自动构建 FFmpeg；本机可设置 `LYRA_FFMPEG_PREFIX` 指向已有的同配置构建目录。产物为 `dist/official.ffmpeg-1.1.0-android-arm64-v8a.zip`。
 
 构建的桥接与播放辅助源码来自 LyraPlayer-native 的 c62b234，保持私有编译，不依赖宿主隐藏的 C++ 符号。公共跨库交互只使用 C ABI。平台输出代码编译在插件自身。
 
@@ -37,3 +37,5 @@ FFmpeg 使用 LGPL 2.1 或更高版本，完整声明见 `plugins/ffmpeg/license
 在 descriptor 中用 `readme: "README.md"`、`changelog: "CHANGELOG.md"` 和 `icon: "icon.png"` 引用同目录文件。`scripts/catalog.py` 会把 Markdown 和 PNG/WebP 内容纳入签名索引；自动计算 ZIP 的 `bytes/sha256`。不要手写伪造大小或摘要。下载镜像通过 `urls` 声明。
 
 FFmpeg 1.0.1 使用官网图标：https://ffmpeg.org/favicon.ico 。图标属于 FFmpeg 项目；插件维护者为 Xu YuanHao，底层 FFmpeg 作者为 FFmpeg contributors。
+
+平台调用声明在 sdk/android-platform-v1.json。使用 Android Activity 前检查 lyraPlatformVersion()==1；句柄稳定、撤销和借用指针规则见 service_contracts.h。本次 SDK 更新不改变 ABI 3 布局，FFmpeg 1.1.0 无需重新打包。

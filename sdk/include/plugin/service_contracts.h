@@ -1,8 +1,26 @@
 #pragma once
 #include <stdint.h>
 #include "message_contracts.h"
-// Optional, instance-scoped service execution. No private C++ objects cross
-// ABI.
+// Registry-local, opaque capability identities, not pointers and not persistent IDs.
+// Thread: lookup/enumeration/mutation/execution run on the registry owner
+// (creating) thread, which is the host frame thread.
+// 0 means absent/invalid. Nonzero handles are never reused in this registry instance.
+// A default capability keeps its handle through provide(same name), refresh,
+// external replacement and restoration. RuntimeServices caches only these defaults.
+// A capability with no default is revoked when its module/publisher unloads;
+// replacing that module or publishing the same name again obtains a NEW handle.
+// Refresh of unchanged modules preserves handles; refresh that retires a module
+// follows the above revocation rule. Enumeration order/index is not stable.
+// On stale/0/detached handles: describe/frame/input/supply return -1,
+// interface returns NULL; request returns UNSUPPORTED (detached: INVALID).
+// describe requires size==sizeof; for a correctly sized output, any failure
+// clears flags/handle/string pointers. Invalid-size outputs are untouched.
+// describe strings and interface pointers are borrowed until registry mutation;
+// do not retain them across refresh/unload. Re-resolve revoked identities by name.
+// Context pointers are borrowed while their registry is alive; detached error
+// behavior does not permit calls after registry destruction.
+// Handles from another instance must never be passed here. No private C++ objects
+// cross this ABI.
 #define LYRA_INTERFACE_SERVICE_CONTEXT 16u
 #define LYRA_SERVICE_SELECTED 0u
 #define LYRA_SERVICE_DEFAULT 1u

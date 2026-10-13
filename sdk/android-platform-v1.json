@@ -1,0 +1,267 @@
+{
+  "protocol": "lyra.android.platform",
+  "version": 1,
+  "thread": "Activity calls enter through its UI-safe public facade; raster calls serialize through the raster lease. Registry platform callbacks run on the frame thread.",
+  "surfaces": {
+    "Activity": [
+      {
+        "name": "lyraPlatformVersion",
+        "signature": "()I",
+        "id": 0,
+        "operation": "LyraPlatformVersion"
+      },
+      {
+        "name": "syncMotionArtwork",
+        "signature": "(JLjava/lang/String;ZZZZLjava/lang/String;IFFFFFZ)V",
+        "id": 1,
+        "operation": "SyncMotionArtwork"
+      },
+      {
+        "name": "clearMotionArtwork",
+        "signature": "()V",
+        "id": 2,
+        "operation": "ClearMotionArtwork"
+      },
+      {
+        "name": "setStatusBarHidden",
+        "signature": "(Z)V",
+        "id": 3,
+        "operation": "SetStatusBarHidden"
+      },
+      {
+        "name": "setNavigationBarHidden",
+        "signature": "(Z)V",
+        "id": 4,
+        "operation": "SetNavigationBarHidden"
+      },
+      {
+        "name": "syncLibraryIncremental",
+        "signature": "()I",
+        "id": 5,
+        "operation": "SyncLibraryIncremental"
+      },
+      {
+        "name": "choosePlugin",
+        "signature": "(Ljava/lang/String;)V",
+        "id": 6,
+        "operation": "ChoosePlugin"
+      },
+      {
+        "name": "takePluginFd",
+        "signature": "()I",
+        "id": 7,
+        "operation": "TakePluginFd"
+      },
+      {
+        "name": "chooseScanFolder",
+        "signature": "(Ljava/lang/String;)V",
+        "id": 8,
+        "operation": "ChooseScanFolder"
+      },
+      {
+        "name": "takeScanFolder",
+        "signature": "()Ljava/lang/String;",
+        "id": 9,
+        "operation": "TakeScanFolder"
+      },
+      {
+        "name": "applyScanStrategy",
+        "signature": "(Ljava/lang/String;Ljava/lang/String;Z)V",
+        "id": 10,
+        "operation": "ApplyScanStrategy"
+      },
+      {
+        "name": "setMotionArtworkTransition",
+        "signature": "(ZF)V",
+        "id": 11,
+        "operation": "SetMotionArtworkTransition"
+      },
+      {
+        "name": "refreshAboutAvatar",
+        "signature": "(Ljava/lang/String;I)V",
+        "id": 12,
+        "operation": "RefreshAboutAvatar"
+      },
+      {
+        "name": "getAppVersion",
+        "signature": "()Ljava/lang/String;",
+        "id": 13,
+        "operation": "GetAppVersion"
+      },
+      {
+        "name": "requestVerifiedResource",
+        "signature": "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;II)I",
+        "id": 14,
+        "operation": "RequestVerifiedResource"
+      },
+      {
+        "name": "pollVerifiedResource",
+        "signature": "(I)Ljava/lang/String;",
+        "id": 15,
+        "operation": "PollVerifiedResource"
+      },
+      {
+        "name": "cancelVerifiedResource",
+        "signature": "(I)V",
+        "id": 16,
+        "operation": "CancelVerifiedResource"
+      },
+      {
+        "name": "readSiblingText",
+        "signature": "(JLjava/lang/String;I)Ljava/lang/String;",
+        "id": 17,
+        "operation": "ReadSiblingText"
+      },
+      {
+        "name": "requestMediaResource",
+        "signature": "(Ljava/lang/String;Ljava/lang/String;IIIII)I",
+        "id": 18,
+        "operation": "RequestMediaResource"
+      },
+      {
+        "name": "pollMediaResource",
+        "signature": "(I)Ljava/lang/String;",
+        "id": 19,
+        "operation": "PollMediaResource"
+      },
+      {
+        "name": "cancelMediaResource",
+        "signature": "(I)V",
+        "id": 20,
+        "operation": "CancelMediaResource"
+      },
+      {
+        "name": "setQueryText",
+        "signature": "(Ljava/lang/String;)V",
+        "id": 21,
+        "operation": "SetQueryText"
+      },
+      {
+        "name": "requestAudioPermission",
+        "signature": "()V",
+        "id": 22,
+        "operation": "RequestAudioPermission"
+      },
+      {
+        "name": "requestNamedPermission",
+        "signature": "(Ljava/lang/String;)I",
+        "id": 23,
+        "operation": "RequestNamedPermission"
+      },
+      {
+        "name": "showQuery",
+        "signature": "(Z)V",
+        "id": 24,
+        "operation": "ShowQuery"
+      },
+      {
+        "name": "acquireSurface",
+        "signature": "(Ljava/lang/String;II)I",
+        "id": 25,
+        "operation": "AcquireSurface"
+      },
+      {
+        "name": "startLibraryScan",
+        "signature": "()V",
+        "id": 26,
+        "operation": "StartLibraryScan"
+      },
+      {
+        "name": "setBackIntercept",
+        "signature": "(Z)V",
+        "id": 27,
+        "operation": "SetBackIntercept"
+      },
+      {
+        "name": "setStatusContrast",
+        "signature": "(Z)V",
+        "id": 28,
+        "operation": "SetStatusContrast"
+      },
+      {
+        "name": "refreshInsets",
+        "signature": "()V",
+        "id": 29,
+        "operation": "RefreshInsets"
+      },
+      {
+        "name": "loadCover",
+        "signature": "(JJI)Landroid/graphics/Bitmap;",
+        "id": 30,
+        "operation": "LoadCover"
+      },
+      {
+        "name": "loadCoverBytes",
+        "signature": "([BI)Landroid/graphics/Bitmap;",
+        "id": 31,
+        "operation": "LoadCoverBytes"
+      },
+      {
+        "name": "loadAssetBitmap",
+        "signature": "(Ljava/lang/String;I)Landroid/graphics/Bitmap;",
+        "id": 32,
+        "operation": "LoadAssetBitmap"
+      },
+      {
+        "name": "openTrack",
+        "signature": "(J)V",
+        "id": 33,
+        "operation": "OpenTrack"
+      },
+      {
+        "name": "openReadFd",
+        "signature": "(J)I",
+        "id": 34,
+        "operation": "OpenReadFd"
+      },
+      {
+        "name": "noteSearch",
+        "signature": "()V",
+        "id": 35,
+        "operation": "NoteSearch"
+      },
+      {
+        "name": "updateSessionMetadata",
+        "signature": "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;J)V",
+        "id": 36,
+        "operation": "UpdateSessionMetadata"
+      },
+      {
+        "name": "onPlaybackEnded",
+        "signature": "()V",
+        "id": 37,
+        "operation": "OnPlaybackEnded"
+      },
+      {
+        "name": "listPlugins",
+        "signature": "(Z)[Ljava/lang/String;",
+        "id": 38,
+        "operation": "ListPlugins"
+      },
+      {
+        "name": "isSystemDarkTheme",
+        "signature": "()Z",
+        "id": 39,
+        "operation": "IsSystemDarkTheme"
+      },
+      {
+        "name": "applyLyraTheme",
+        "signature": "(Z)V",
+        "id": 40,
+        "operation": "ApplyLyraTheme"
+      },
+      {
+        "name": "extractMotionArtwork",
+        "signature": "(III)I",
+        "id": 41,
+        "operation": "ExtractMotionArtwork"
+      },
+      {
+        "name": "normalizeMotionArtwork",
+        "signature": "([B)I",
+        "id": 42,
+        "operation": "NormalizeMotionArtwork"
+      }
+    ]
+  }
+}
