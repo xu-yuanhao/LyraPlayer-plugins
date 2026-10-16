@@ -1,0 +1,80 @@
+{
+  "plugins": [
+    {
+      "abi": 3,
+      "arch": "arm64-v8a",
+      "author": "Xu YuanHao / FFmpeg contributors",
+      "author_url": "https://github.com/xu-yuanhao",
+      "bytes": 778948,
+      "capability": "playback",
+      "changelog": "# 1.3.0\n\n- 将 Stem 模型拆为可选的 official.transition-stems 插件；本包不含模型。\n- 包含 1.3.0-dev.5 的坏帧恢复、FLAC 识别和过渡修复。\n- 修正下载描述，确保版本、包名及下载文件一致。\n\n# 1.3.0-dev.5\n\n- Recover after invalid encoded packets instead of ending a playable track at the first damaged frame.\n\n# 1.3.0-dev.4\n\n- Recognize FLAC after a large leading ID3 tag from fixed-size headers and select the FLAC demuxer while retaining metadata.\n\n# 1.3.0-dev.3\n\n- Introduce incoming accompaniment immediately instead of suppressing midrange and gating bass until mid-transition. Retain separate vocal handoff and peak protection.\n\n# 1.3.0-dev.2（过渡硬切修复）\n\n- 修复人声退出点为零时，旧歌人声第一帧被截断。\n- 两段人声包络始终完整落在最终过渡时长内，覆盖短过渡与乐句调整。\n- 只在两侧都有对齐且完整覆盖的分轨时启用 Stem；缓存缺失或速度不匹配时保留完整自适应过渡。\n- 增加真实混音器的五种边界场景与首尾音频样本回归。\n\n# 1.3.0-dev.1（本地分轨试用版）\n\n- 后台流式整曲结构与真实人声分析，持久化小索引和有界分轨 PCM 缓存。\n- 打包独立 Spleeter/ncnn 依赖，实际分离人声与伴奏，交接时分别控制包络。\n- 未准备好的曲目沿用自适应过渡；不把推理放进音频输出路径。\n- 保留混合采样率切换后 seek 的输出时钟及速度重置修复。\n\n# 1.2.0-dev.3（本地试听版）\n\n- 通过可选消息扩展接入有界首尾静音分析，保留弱音/混响余量。\n- 首曲与过渡目标跳过确认的片头静音，自动交接参考有效音乐结尾。\n- 保留原曲进度、歌词坐标与显式 seek；短全静音曲不跳成空曲。\n- 同一解码器扫描并重置，不增加第三个解码器。\n\n# 1.2.0-dev.2（本地试听版）\n\n- 修复 AAudio 重复跳转后时间戳落后，导致进度停住、自动和手动过渡失效。\n- 跳转时重建输出流以清除帧计数偏移；连续切歌仍复用同一个输出流。\n- 增加真实 AAudio 连续 60 轮跳转与切歌静音回归。\n\n# 1.2.0-dev.1（本地试听版）\n\n- 通过接口 23 接入自动、手动切歌的节拍匹配和频段交接。\n- 复用单个 AAudio 输出，映射变速后的源时间，支持准备中 seek、连续切歌和安全卸载。\n- 不变更现有解码器列表。\n\n# 1.1.1\n\n- seek 请求立即暂停旧输出，等待定位期间冻结音频时钟，避免歌词和进度提前跳转。\n- 曲尾使用统一播放时钟判断最后一个音频帧是否已呈现，避免等待下一次硬件时间戳。\n- 解码格式和 ABI 3 保持不变。\n\n# 1.1.0\n\n采用当前 ABI 3 插件契约；仅支持当前内测宿主，不提供旧 ABI 适配。解码格式保持不变。\n\n# 1.0.1\n\n- 新增作者、官方 FFmpeg 图标、离线 Markdown 说明与更新记录。\n- 解码器及播放实现保持一致。\n",
+      "config": "",
+      "description": "FFmpeg 解码和自适应音频过渡。独立轻量包，不含模型；可选安装 Stem 人声分离插件增强过渡。",
+      "entry": "plugin.so",
+      "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/ffmpeg",
+      "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAIjklEQVR42uWbb4SVaR/HP9/jOI55jjFGMkZGkiRZa2WtfZFHVvbFuR/doxcryUqSJEmSsUaSjMdIxhhrjEdGkmTu7HX0Yq21L1ZW8khWVpIkK8lIxhjHMb99cX6nPaZ/c98zc8+2e3Hcztxz7vv6/n7f39/rumRm4h88in9ncNWkWhQqOs4iUAIKbbiff9ACiJKoCKwFKsBajA7U/G7YGqEuoBvoxuhE9AJloBeoAwf1VzCB6lS1IqnoQBZeO33Ca/yz1kH1+r3SAu22f3/fmCquovbWGnZEph5Ja4CSYWuFSg607EBXcmxYNAOcbl2GlZ1aZddAJ9CBNTViWJ+kCtCHUUH0mNk1ofHQH267xrslTQC7VpF4PwMHVZ2q/gvocNp0GdYr1At0vaKZsQ5RMbOKpJJhFddUxX9bftebDJsXemzYuNAV4DBwdJE0Xe4xD9wF9oc43CliHEYcB3oAxBsI4X+SxFv/5x1DqACsB04B/wG2rWIEeoixP/SHOwAFRHcL/AqPOaGHwNZVBH/fsMOIu3nnAXXgN8M2ClVWBbrx3GQHhG6GOMznLYCHwLpVAw+/IQ7V4trPC28UVljqYDxwh7pmlcC/BAbc65OvAOAxopyTj3nTeA4cBL5rp31eAniKmPNQmnY0gBm/Zh3PgGPA1NvAtwTwAqO+3B4f43cPfVmEfB44Avye8f2zhh3BuBri8E4hFjAuIDYYVgWGDfvBsCeeMGQZM8CviI8zJDpzhg25AD4D1mWxecNOCU2F/vBeBr2WCkdJ1AmMAHszaG8euO2xviPDbyc9WRpw2y1nCLffAGMhDrNREm10HCMhDtOL9QHbMoE36hh3lwD+qgPf5/QvZ2DeAHAhxGG2mlS3AleAQWA4SqKOxQrgkyxOy7DHJuvJAL4BfO+T/8onnJZ5s8BZ13wjSqIeoQvAx35/q9ctKxYFHguVhLKEu9vurT9z+lYyCHAUGA1xmIuSqNewUWDHYvAtORM07KlMDcT6DD//1c1tG/Ctl9Zp3j0HTAidboEHLmLsWGy9tlQGzAjVEZsyPOuRmR0F1ht2Ji14YF5oQqZBB99j2IiZ7ZC06LkslQGVDJRtZoiwV9Ic8L1Q2s7PHDBh2Ilaf61eTarrhMaFvkxZqa94KvzmDLEZ6hrAWIa2VwOjhnGmFtfqURJ1C40AX2SZTN51+QtgAOMm4prbftpwWUMcDXF4HiVRl0eNzK21PAUw617+F8REhnDbAL4DDoY4THvCdt6dKH91AbRC1TW/pqOrAeIGcKwN/CDGXrQ0DHkIoGFmw0IjJhsV6k9Ne3GLZhNzOkqiLsOGhfazDCsahRw0f1nSGHDSwRdS2vxN4ICDrwDnhPYu1wRXlgHGdWAAcQRxKIPAf3HNP4iSqEyzlX5oOae4kgK4gfgG+Nonnra4uQnsC3F46OAHPGXmQxDAXYyjiO3AiQwF0kPDjtfi2sMoiUpeGp/IIMRVEcBdYJ+DP0+zIZpmPAB21eLavTbNn1opZRWW2eYfAUcweoBzGcDf8zh/z+v3Y/5ZMVNdzgc/RRwBiohx0neC77vDuxUlUQE4AJxZaUe9XA9/5l2caeAi0JeSOU8QxzFuR0lUwDjoDnTF85TlMIE6xmmv7S8Am1KCf4Y4GeJwA4Fh/YghclpIKSzR5meBk4ifXPOfpmaO2BPicKWleaGJDL2BVTGBOmLEC5SxDOCfAidCHH6MkqiIsQdxOk/wS2FAwzU+5t7+y5TPmgEGQxwuV6eqBWCPF0lrUzLw5WoIoAFcBoa8Itud8vfTHtcnAST1A2fR4jtLhtWBccSP+QrAAPiJZgv6APB1ynJ0xhkzHuJQj5Loc5qLMKlWgIQmPUHKmQFNiR9wyqbNzuY8VI54734XzYWLNPlCw7AL7jum83aCd1zquzw7K6QCb4whLgFESbQDGE6p+QZwSehMiMPLPJ1gw8HvpbnaO5wyxW0AQ4jBEId5M9uJMQlsSGd9NgocD3F4sdJhcBq4Zdh9mW4h/k+zjb3DHV8a1swCIxjnQ3+YjZJop6QRUuwZMKwuNOmLH680HyVRH9mW8d4rgKvAZC2uNdpets3MzvuOzjStsDFJZx38Jq8ON6Z0eBeBgQXgt3jWuWXZBRDiMNP+3e11PCX4eWBC0pAvU3/uOcOWlKYzhnE69Ddp70XSp8D/POUupJhP+i0y0VS0CfhvSnud9+zwNPDStTUKfJTC4BvAJfgTvI/Nho0DmxcL3rAGzW70Gx3nW/cK+8Qv8ecS82LHC+AGxjSigPFvlFrz54DzC2j/GTCRkkXTGGcQ34Y41BctAHcwo0CVfMeM+4mhEIe5Ntq3NjtsTumABz1lr2PUQ//rQnjTFpkuf9kX5Lh2aFhD6LRrfq5tPp+4zX+U8pEvPXw/bfv+si3SPTXsh+IC8GucfrmCp7nMfhbf5NDSvJlVJQ2njRw+OoHt7/BTz4WeFNscXhlxhuYenTzBz3lIG1kAfrukUbLtFFtMAlh6FQajJCobNii0n3z38De8phhvpz2wK23ClDkP8L77MUl5H2CYcc2/8tDVpFqUaTtilJy21xZprtxkWbxYqubP0dzSVm/L+nYixshxb3ERo2yyS0KtU1mtIzCVtmtpmVpV88Aj7wFMtNl8CdjtSVdvjop4PQxWk2qnUNkrvg6MLkSJ5laWCkYfenWUrdvbWM2jbM11/IUZZqFN65PAOHC7tYHZ4/weN4fuHLG/AL56rRaoxbVWvHyW5mnVpFqU1DrLt47mCbJeoU6gC6MW+sObWliHvcOUazP0valwXiNKoq1uen3twnOGtdj16uirmRUklZ1ZmRdLDXsi1K8P4fC0nzPsdGG0jr6WXFhFb9R0+P1OWsdl38EqM7shabf+DqfHfRW5QPP0aaHtwHQJowfR1casdS6c6yEO1/VPPz7/Bxe1M36TwUHgAAAAAElFTkSuQmCC",
+      "id": "official.ffmpeg",
+      "license": "LGPL-2.1-or-later",
+      "platform": "android",
+      "readme": "# FFmpeg 播放引擎\n\n为 Lyra Player 提供 FFmpeg 7.1.1 音频解码能力。\n\n## 支持格式\n\n- MP3、FLAC、AAC、AAC LATM、ALAC\n- Vorbis、Opus、APE、WavPack\n- WAV 与现有 PCM 格式\n\n## 使用方式\n\n安装后通过公开播放接口接管解码，继续使用 Lyra 的音频输出时钟、歌词、进度记忆和背景律动。\n\n卸载后恢复系统解码。系统支持的格式因设备而异。\n\n## 作者与开源\n\n插件维护：Xu YuanHao。FFmpeg：FFmpeg contributors。\n\nFFmpeg 使用 LGPL-2.1-or-later；许可证随插件附带，完整插件源码与对应 FFmpeg 源码公开提供。\n\n[插件源码](https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/ffmpeg)\n\n[FFmpeg 官网](https://ffmpeg.org/)\n\n## 图标\n\n使用 FFmpeg 官网的图标，来源：https://ffmpeg.org/favicon.ico 。图标归 FFmpeg 项目所有，不表示 FFmpeg 项目为本插件背书。\n\n## 本地过渡试听版 1.2.0-dev.3\n\n需要支持 `LYRA_INTERFACE_AUDIO_TRANSITION`（接口 23）的宿主。过渡参数由宿主 `audio_transition` 配置传入；自动和手动切歌共用一套 native 交接逻辑。可靠节拍时保调对拍，节拍证据不足时保留完整频段混合，不强行变速。旧宿主不提供配置时默认关闭，维持普通播放。\n\nSignalsmith Stretch 与 Signalsmith Linear 为 MIT 许可，文本随包放在 `licenses/`。`test.sh <serial>` 用真实 FFmpeg 解码和静音可测输出覆盖过渡、时钟、seek、快速切换及插件导出入口。此版本仅用于本地体验，尚未发布到在线目录。\n\n`test-hardware.sh <serial>` 通过真实 AAudio 输出静音，分别在 48kHz 和 44.1kHz 连续验证 60 轮跳转与切歌。跳转重建输出流，切歌复用该流，验证时钟持续就绪和欠载计数。\n\n试听版 3 增加可选首尾静音分析：扫描上限、窗口、双声道 RMS/峰值阈值与保留余量均由宿主配置。原始时长与歌词时间不变，显式 seek 不强制跳过静音。\n\n## 1.3.0-dev.1 分轨试用版\n\n包含真实 Spleeter 人声/伴奏分离依赖。后台整曲分析只保存曲线索引和有界 PCM 缓存；首次准备需要时间和 CPU。推理运行在独立原生 helper 中，不进入播放进程的输出混音路径。已有分轨缓存时分别交接人声与伴奏，未准备或模型失败时沿用现有策略。主 APK 不包含模型。不是鼓/贝斯四轨分离。\n\n\n## 独立可选 Stem 插件\n\n本包只含播放引擎；无需模型即可解码和执行自适应过渡。需要真实人声／伴奏分析时，另装 `official.transition-stems` 并重启播放器。两包可分别升级、卸载；卸载 Stem 后重启恢复非神经网络过渡。\n",
+      "sha256": "266abeb13d82083c9affb1a0f59e9ddfa23feaa0b3bb04d6240b34894ce452ba",
+      "tags": "ffmpeg 插件 plugin decoder 解码器 引擎 播放 ape wavpack alac flac mp3 aac vorbis opus 无损",
+      "title": "FFmpeg 播放引擎",
+      "urls": [
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.3.0/official.ffmpeg-1.3.0-android-arm64-v8a.zip"
+      ],
+      "version": "1.3.0"
+    },
+    {
+      "abi": 3,
+      "arch": "arm64-v8a",
+      "author": "Xu YuanHao",
+      "author_url": "https://github.com/xu-yuanhao",
+      "bytes": 109305,
+      "capability": "media-data",
+      "changelog": "# 1.1.0\n\n- 传输整体切换到 `interface.music.163.com` 现行路由：搜索与详情、歌词走普通 form POST，直链走匿名 eapi（`player/url/v1`，AES-128-ECB），退役旧 `music.163.com` GET 爬取与外链跟随。\n- 播放前增加完整源鉴别（id 一致、code 200、有直链、无试听对象），试听/VIP 片段不再进播放器。\n- 封面改用 `picId` 官方拼接（含详情回退），歌词接口改用 `lyric/v1`。\n\n# 1.0.0\n\n- 首版：搜索框直搜网易云免费音乐（仅 `fee == 0`，VIP/付费跳过）。\n- 点播解析 https 直链，宿主下载后播放；封面与歌词按需加载。\n- 本地结果优先，在线结果追加；空查询与取消不产生网络请求。\n",
+      "config": "",
+      "description": "在搜索框直接搜网易云免费音乐并播放。只收录免费曲目，本地结果优先显示，在线结果追加在后。",
+      "entry": "plugin.so",
+      "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/netease",
+      "icon": "data:image/png;base64,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",
+      "id": "official.netease",
+      "license": "MIT",
+      "platform": "android",
+      "readme": "# 网易云免费音乐\n\n官方媒体数据插件（`official.netease`，ABI 3，Android arm64-v8a）。安装后直接在现有搜索框搜到网易云免费音乐并播放，不改主程序任何代码。\n\n## 行为\n\n- 在搜索框输入关键词，插件用同一查询搜网易云，**只收录免费曲目**（`fee == 0`），VIP 与付费专辑直接跳过，不会出现在结果里。\n- 排序由宿主决定：**本地结果优先显示，在线免费结果追加在后**，和本地资料库、插件市场条目混排，不断层。\n- 点一首在线结果：插件经匿名 eapi 取完整直链（双重鉴别：搜索 `fee` + 播放源 `code/url/试听对象`），由系统下载器取回整文件再解码，播放、进度、歌词、背景律动和本地一致。\n- 封面取 `picId` 官方拼接，歌词取 `lyric/v1`（含译文合并），点歌时按需加载，不预取。\n- 空搜索不触发网络；换关键词时旧查询自动取消。\n\n## 隐私与来源\n\n- 只有在使用搜索框且已安装本插件时，查询关键词才会发往网易接口（搜索、直链、封面、歌词四个路由）。未安装时宿主不把搜索词发给任何服务器。\n- 传输路线参考开源项目 NEORUAA/MeiloX（GPL-3.0）验证过的现行匿名路由实现，代码为本插件独立编写，未复制其源码；MD5/AES 为公开算法标准实现。\n- 使用网易云公开接口，未获网易授权；接口变更可能导致搜索或播放失败，属预期内波动。\n- 音频与图片版权归原权利人，本插件不存储、不转发。\n\n## 构建\n\n```sh\nplugins/netease/build.sh\n```\n\n需要 Android SDK/NDK 28.2.13676358。产物为 `dist/official.netease-1.1.0-android-arm64-v8a.zip`。解析器与密码原语另有主机单测（真实抓包样本，不进包）：\n\n```sh\ncd plugins/netease/src\ng++ -std=c++17 -fno-exceptions -fno-rtti -Wall -Wextra -I. netease_json.cpp crypto.cpp netease_json_test.cpp -lz -o /tmp/netease_json_test\n/tmp/netease_json_test ./testdata\ng++ -std=c++17 -fno-exceptions -fno-rtti -Wall -Wextra -I. crypto.cpp crypto_test.cpp -lz -o /tmp/crypto_test\n/tmp/crypto_test\n```\n\n插件只用公开 C ABI 与 `host->java_vm` 网络，不链宿主私有符号；音频回调不调用插件。\n",
+      "sha256": "9e78fbe3ab406407b181180dd16b7bf71ddbd55f2b4972765c760698ce892e03",
+      "tags": "网易云 netease 在线 online 免费 搜索 音乐 播放 解析 cloud music",
+      "title": "网易云免费音乐",
+      "urls": [
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/netease-v1.1.0/official.netease-1.1.0-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.netease/1.1.0/official.netease-1.1.0-android-arm64-v8a.zip"
+      ],
+      "version": "1.1.0"
+    },
+    {
+      "abi": 3,
+      "arch": "arm64-v8a",
+      "author": "Xu YuanHao / Deezer / ncnn contributors",
+      "author_url": "https://github.com/xu-yuanhao",
+      "bytes": 18942087,
+      "capability": "audio-analysis",
+      "changelog": "# 0.1.0\n\n- 独立发布人声／伴奏分离模型和低优先级推理进程，不再随 FFmpeg 插件下载。\n- 通过现有 ABI 3 Stem 消息接口提供能力，未安装时 FFmpeg 保留非神经网络的自适应过渡。\n",
+      "config": "",
+      "description": "可选 Spleeter/ncnn 人声与伴奏分离模型，为 FFmpeg 自适应过渡提供分轨分析。按需安装，不影响普通播放。",
+      "entry": "plugin.so",
+      "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/transition-stems",
+      "id": "official.transition-stems",
+      "license": "MIT AND BSD-3-Clause AND Apache-2.0",
+      "platform": "android",
+      "readme": "# Transition Stems (experimental)\n\nIndependently installable optional audio analysis plugin for official FFmpeg 1.3.0 or newer. Native ABI 3, typed worker interface 24. The player core never links this module.\n\nUses the actual MIT Spleeter 2-stem vocal U-Net, exported by sherpa-onnx and converted through pinned pnnx 20260526 to ncnn 20260526. Accompaniment is the sample-aligned residual of the original stereo audio minus predicted vocals. This is vocals/accompaniment separation, not a drums/bass four-stem model.\n\nModel STFT is 44100 Hz, 4096 FFT / 1024 hop, 64 time frames. Process input is 68608 stereo frames; the host retains the central 32768 frames with 16384 context. A 4096-frame estimate overlap is blended by the host. The exported upstream metadata says 41000; it is not used as a playback rate.\n\nRun `python3 prepare.py` in an environment with `onnx` and `pnnx==20260526`, then `ANDROID_HOME=... ./build.sh`. Downloads and model binaries are ignored. prepare.py pins source revisions and archive/model hashes. The FP16 converted weights are 19660432 bytes; they are outside the main APK.\n\nWorker calls are synchronous and serialized. A small facade owns a socket-connected native helper; only the helper links ncnn. The helper starts through the Android system linker with the same app UID, constructs its network after exec, uses one low-priority thread and exits when its parent dies. No inference or worker IPC on the audio output path. A failed, killed or unsupported worker returns an explicit failure and is reaped; it cannot fabricate a vocal curve. Private module snapshots reference one immutable cached weight file rather than copying weights on each launch. No hard-link permission is required.\n\nThe process launch uses only descriptor operations and exec after fork; no model allocation or JNI in the forked ART heap. On systems that reject helper startup, playback retains the existing non-neural fallback. Full-track preparation costs CPU and model memory once; persistent cache is bounded by the player configuration. Missing models or failed inference return unsupported, never fabricated vocal detection.\n\nSources: https://github.com/deezer/spleeter ; https://github.com/k2-fsa/sherpa-onnx ; https://github.com/Tencent/ncnn ; https://github.com/pnnx/pnnx . See licenses/.\n\nInstall this package separately from FFmpeg and restart Lyra Player. Without it FFmpeg retains decoding, beat/EQ transitions and non-neural fallback; no model is downloaded by the playback plugin. The independent plugin stages worker resources privately because Android cannot execute the installed external-files payload directly. The only model is vocals/accompaniment, not separate drum/bass stems.\n",
+      "sha256": "daee70e7ed634fc2792b867d7fef8845315bb7fcb1c2d25e3b882cdb7dffa518",
+      "tags": "stem 人声 分离 伴奏 过渡 spleeter ncnn 模型",
+      "title": "Stem 人声分离",
+      "urls": [
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/transition-stems-v0.1.0/official.transition-stems-0.1.0-android-arm64-v8a.zip"
+      ],
+      "version": "0.1.0"
+    }
+  ],
+  "schema": 1
+}
