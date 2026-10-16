@@ -9,6 +9,7 @@ prefix=${LYRA_FFMPEG_PREFIX:-$PWD/native/third_party/ffmpeg/out}
 if [[ ! -f $prefix/lib/libavcodec.a ]]; then bash native/third_party/build_ffmpeg.sh; fi
 version=$(python3 -c 'import json,tomllib; d=json.load(open("catalog.json")); m=tomllib.load(open("manifest.toml","rb")); assert d["version"]==m["version"]; print(d["version"])')
 mkdir -p "$root/dist/ffmpeg"
+rm -rf "$root/dist/ffmpeg/stems"
 "$compiler" "-DLYRA_PLUGIN_VERSION=\"$version\"" -std=c++17 -Oz -flto -shared -static-libstdc++ -fPIC -fno-exceptions -fno-rtti -fvisibility=hidden -ffunction-sections -fdata-sections -I native -I native/third_party/signalsmith/linear/include -I "$root/sdk/include" -I "$prefix/include" \
  src/plugin.cpp native/playback/{engine,engine_provider,audio_features,progress_memory,transition_control}.cpp native/platform/android/{audio_output,log}.cpp \
  -Wl,--start-group "$prefix/lib/"{libavformat,libavcodec,libswresample,libavutil}.a -Wl,--end-group \
