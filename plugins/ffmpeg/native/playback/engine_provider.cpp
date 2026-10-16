@@ -12,18 +12,19 @@ struct EngineBackend {
 OwnedPlaybackBackend make_engine_backend() {
     auto *backend = new EngineBackend;
     OwnedPlaybackBackend out;
+    out.transition=backend->engine.transition_interface();
     auto &api = out.api;
     api.size = sizeof(api);
     api.version = LYRA_INTERFACE_VERSION;
     api.user = backend;
     api.snapshot = [](void *user, int64_t target, int32_t features, LyraPlaybackSnapshotV3 *result) {
-        if (!result || result->size < sizeof(*result))
+        if (!result || result->size != sizeof(*result))
             return -1;
         *result = playback_export(static_cast<EngineBackend *>(user)->engine.snapshot(target, features));
         return 0;
     };
     api.command = [](void *user, const LyraPlaybackCommandV3 *c) {
-        if (!c || c->size < sizeof(*c))
+        if (!c || c->size != sizeof(*c))
             return -1;
         auto &engine = static_cast<EngineBackend *>(user)->engine;
         switch (c->kind) {
@@ -62,6 +63,7 @@ OwnedPlaybackBackend make_engine_backend() {
     };
     api.quiesce = [](void *user) {
         static_cast<EngineBackend *>(user)->engine.stop();
+        static_cast<EngineBackend *>(user)->engine.quiesce_analysis();
         return 1;
     };
     api.listener = [](void *user, LyraPlaybackEventFn fn, void *target) {
@@ -71,7 +73,8 @@ OwnedPlaybackBackend make_engine_backend() {
         b.engine.set_listener(
             [](void *owner, int event, uint64_t generation) {
                 auto &b = *static_cast<EngineBackend *>(owner);
-                if (b.listener) { auto progress=playback_export(b.engine.snapshot(0,false)); b.listener(b.listener_user,event,generation,event==2?&progress:nullptr); }
+                if (b.listener)
+                    b.listener(b.listener_user, event, generation, nullptr);
             },
             user);
     };

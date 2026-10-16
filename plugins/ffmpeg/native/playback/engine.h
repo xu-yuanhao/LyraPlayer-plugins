@@ -3,6 +3,10 @@
 #include "playback/progress_memory.h"
 #include "playback/audio_features.h"
 #include "playback/playback_clock.h"
+#include "playback/transition_control.h"
+#include <memory>
+struct EngineTransition;
+struct EngineAnalysis;
 
 #include "platform/audio_output.h"
 
@@ -27,6 +31,7 @@ public:
 
     void set_memory(ProgressMemory* memory){memory_=memory?memory:&private_memory_;}
     void set_listener(void (*fn)(void* user, int event, uint64_t generation), void* user);
+    const LyraAudioTransitionV3 *transition_interface()const{return transition_control_.interface();}
     void start(int fd, int64_t track, int64_t duration, const AudioFeatureSettings& settings, uint64_t generation,
                const AudioOutputSettings& output = {});
     PlaybackSnapshot snapshot(int64_t time_ns = 0, bool with_features = true) const;
@@ -42,6 +47,7 @@ public:
     void clear_prime();
     bool take_seek_failed();
     void stop();
+    void quiesce_analysis();
     void reap();
     bool timer_active() const;
     double position_exact() const;
@@ -61,7 +67,7 @@ private:
     void release_writer(bool keep);
     bool discard_pending(lyra::audio::Stream* stream);
     void close_stream();
-    void feed(const int16_t* src, int count, int64_t frame_us);
+    void feed(const int16_t* src, int count, int64_t frame_us, double speed=1);
     void wait_for_drain();
     void maybe_start();
     void publish_lyrics(std::string text);
@@ -75,6 +81,13 @@ private:
     AudioFeatureSettings feature_settings_;
     AudioOutputSettings output_settings_;
     AudioOutputSettings stream_settings_;
+    std::mutex handoff_mu_;
+    bool accepting_transition_=false;
+    AudioTransitionControl transition_control_;
+    std::unique_ptr<EngineTransition> transition_;
+    std::unique_ptr<EngineAnalysis> analysis_;
+    std::atomic<bool> transition_pending_{false};
+    double pcm_media_frames_=0;
     int64_t pcm_origin_us_ = -1, pcm_frames_ = 0;
     sem_t sem_{};
     pthread_t thread_{};

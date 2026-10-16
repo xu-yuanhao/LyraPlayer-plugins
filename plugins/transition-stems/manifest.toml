@@ -1,0 +1,5 @@
+id = "official.transition-stems"
+version = "0.1.0"
+abi = 3
+type = "audio-analysis"
+entry = "plugin.so"

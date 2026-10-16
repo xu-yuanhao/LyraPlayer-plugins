@@ -1,17 +1,16 @@
 {
   "id": "official.ffmpeg",
   "title": "FFmpeg 播放引擎",
-  "version": "1.1.1",
+  "version": "1.3.0",
   "abi": 3,
   "platform": "android",
   "arch": "arm64-v8a",
   "capability": "playback",
-  "description": "扩展音频格式支持，提供 APE、WavPack、ALAC 等解码能力。安装后使用 FFmpeg 播放，保留统一歌词、进度和背景律动。",
+  "description": "FFmpeg 解码和自适应音频过渡。独立轻量包，不含模型；可选安装 Stem 人声分离插件增强过渡。",
   "tags": "ffmpeg 插件 plugin decoder 解码器 引擎 播放 ape wavpack alac flac mp3 aac vorbis opus 无损",
-  "package": "official.ffmpeg-1.1.1-android-arm64-v8a.zip",
+  "package": "official.ffmpeg-1.3.0-android-arm64-v8a.zip",
   "urls": [
-    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.1.1/official.ffmpeg-1.1.1-android-arm64-v8a.zip",
-    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg/1.1.1/official.ffmpeg-1.1.1-android-arm64-v8a.zip"
+    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.3.0/official.ffmpeg-1.3.0-android-arm64-v8a.zip"
   ],
   "author": "Xu YuanHao / FFmpeg contributors",
   "author_url": "https://github.com/xu-yuanhao",

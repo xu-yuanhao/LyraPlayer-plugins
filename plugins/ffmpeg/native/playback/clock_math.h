@@ -1,6 +1,11 @@
 #pragma once
 #include <algorithm>
 #include <cstdint>
+#include <chrono>
+
+inline int64_t audio_ms_us(int64_t milliseconds) {
+    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::milliseconds(milliseconds)).count();
+}
 
 inline int64_t audio_frames_us(int64_t frames, int rate) {
     if (rate < 1 || frames < 1) return 0;

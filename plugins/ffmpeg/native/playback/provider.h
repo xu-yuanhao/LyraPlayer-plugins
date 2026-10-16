@@ -2,11 +2,13 @@
 #include "playback/playback_clock.h"
 #include "playback/progress_memory.h"
 #include "plugin/contracts.h"
+#include "plugin/transition_contracts.h"
 #include <string>
 // Native-only ownership extension for the built-in engine. Plugin providers use
 // the C protocol; their lifetime is retained by the registry until quiescence.
 struct OwnedPlaybackBackend {
     LyraPlaybackProviderV3 api{};
+    const LyraAudioTransitionV3 *transition = nullptr;
     void (*destroy)(void *) = nullptr;
     void (*attach_memory)(void *, ProgressMemory *) = nullptr;
     bool (*seek_failed)(void *) = nullptr;

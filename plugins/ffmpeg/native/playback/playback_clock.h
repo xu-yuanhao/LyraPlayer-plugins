@@ -43,7 +43,8 @@ struct PlaybackClockState {
         }
         s.position_us = origin_us + audio_frames_us(std::max<int64_t>(0, s.output_frame - origin_frame), rate);
         s.position_us = pcm.position(s.output_frame, rate, s.position_us);
-        if (paused || !active || pending_seek) s.position_us = ready ? frozen_us : origin_us;
+        if (pending_seek) s.position_us = frozen_us;
+        else if (paused || !active) s.position_us = ready ? frozen_us : origin_us;
         if (duration_us > 0) s.position_us = std::min(s.position_us, duration_us);
         return s;
     }

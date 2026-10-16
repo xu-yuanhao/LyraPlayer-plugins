@@ -5,3 +5,7 @@ __pycache__/
 *.keystore
 *.pem
 signing.env
+
+plugins/transition-stems/native/third_party/
+plugins/transition-stems/models/*.bin
+plugins/transition-stems/models/*.onnx

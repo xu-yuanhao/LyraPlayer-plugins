@@ -18,7 +18,7 @@ GitHub 是主开发仓库，GitLab 为相同提交与发布文件的镜像；镜
 plugins/ffmpeg/build.sh
 ```
 
-需要 Android SDK/NDK 28.2.13676358，以及构建脚本使用的主机工具。默认自动构建 FFmpeg；本机可设置 `LYRA_FFMPEG_PREFIX` 指向已有的同配置构建目录。产物为 `dist/official.ffmpeg-1.1.1-android-arm64-v8a.zip`。
+需要 Android SDK/NDK 28.2.13676358，以及构建脚本使用的主机工具。默认自动构建 FFmpeg；本机可设置 `LYRA_FFMPEG_PREFIX` 指向已有的同配置构建目录。产物为 `dist/official.ffmpeg-1.3.0-android-arm64-v8a.zip`，不含模型。可选 Stem 包单独运行 `plugins/transition-stems/build.sh` 构建。
 
 构建的桥接与播放辅助源码来自 LyraPlayer-native 的 c62b234，保持私有编译，不依赖宿主隐藏的 C++ 符号。公共跨库交互只使用 C ABI。平台输出代码编译在插件自身。
 
@@ -43,3 +43,7 @@ FFmpeg 1.0.1 使用官网图标：https://ffmpeg.org/favicon.ico 。图标属于
 可选剪贴板接口见 `sdk/include/plugin/clipboard_contracts.h`：通过 `system.clipboard` 服务查询 ID 19 的消息接口，版本与 size 精确匹配。现有 FFmpeg 1.1.1 不使用该能力，无需重新打包。
 
 系统网页导航接口见 `sdk/include/plugin/link_contracts.h`：`system.links` 服务，ID 20，当前消息信封，URI 仅支持 http(s)。现有播放插件不依赖此新增接口。
+
+## 目录密钥迁移（2026-10-16）
+
+原目录私钥遗失；旧 `catalog/index.json`、`index.sig` 和公钥原样保留。新目录发布到 `catalog/v2/`，使用新的 P-256 密钥；新版播放器内置新公钥与目录路径。旧客户端继续使用旧目录，需要更新播放器才能获取新版插件。私钥仅存本机 `~/.local/share/lyra-player/keys/plugin-catalog-v2.pem`，不提交。请单独加密备份它；APK 的 JKS 不能代替目录密钥。新插件先发布 GitHub 附件；未验证的镜像不进入新版目录。
