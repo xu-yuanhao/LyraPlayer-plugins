@@ -17,8 +17,8 @@ ffmpeg -hide_banner -loglevel error -f lavfi -i 'sine=frequency=440:duration=4:s
 adb -s "$serial" push "$root/dist/tests/engine" "$remote"
 adb -s "$serial" push transition-test.toml "$remote.toml"
 adb -s "$serial" push "$root/dist/tests/transition.flac" "$remote.flac"
-formats=(mp3 m4a alac.m4a ogg opus wv s24.wav f32.wav)
-codecs=(libmp3lame aac alac libvorbis libopus wavpack pcm_s24le pcm_f32le)
+formats=(mp3 m4a alac.m4a ogg opus wv ac3.m4a eac3.m4a s24.wav f32.wav)
+codecs=(libmp3lame aac alac libvorbis libopus wavpack ac3 eac3 pcm_s24le pcm_f32le)
 args=()
 for i in "${!formats[@]}"; do
     file="$root/dist/tests/matrix.${formats[$i]}"

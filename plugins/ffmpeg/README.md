@@ -6,6 +6,7 @@
 
 - MP3、FLAC、AAC、AAC LATM、ALAC
 - Vorbis、Opus、APE、WavPack
+- AC-3、E-AC-3（Dolby Digital / Dolby Digital Plus，含 Atmos 音轨），多声道下混为立体声
 - WAV 与现有 PCM 格式
 
 ## 使用方式

@@ -1,3 +1,8 @@
+# 1.4.0
+
+- 增加 AC-3 与 E-AC-3（Dolby Digital / Dolby Digital Plus、含 Atmos 音轨）解码，之前这类 m4a 只能退回系统解码器。
+- 配套启用 ac3 解析器；多声道按现有立体声下混输出，其余格式与播放路径不变。
+
 # 1.3.0
 
 - 将 Stem 模型拆为可选的 official.transition-stems 插件；本包不含模型。

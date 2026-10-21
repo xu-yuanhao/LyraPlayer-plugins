@@ -18,7 +18,7 @@ BUILD="$WORK/build"
 PREFIX="$WORK/out"
 TARBALL="$WORK/ffmpeg-7.1.1.tar.xz"
 STAMP="$PREFIX/stamp"
-KEY="ffmpeg-7.1.1 fused hidden noproto nodouble nopix aac alac ape flac mp3 opus vorbis wavpack pcm swresample"
+KEY="ffmpeg-7.1.1 fused hidden noproto nodouble nopix aac alac ape flac mp3 opus vorbis wavpack ac3 eac3 pcm swresample"
 
 if [[ ! -x "$CC" ]]; then
   echo "ndk clang missing: $CC" >&2
@@ -276,8 +276,8 @@ if ! "$SRC/configure" \
   --enable-swresample \
   --enable-zlib \
   --enable-demuxer=mp3,flac,wav,aiff,aac,mov,ogg,matroska,ape,wv \
-  --enable-decoder=mp3,flac,aac,aac_latm,alac,vorbis,opus,ape,wavpack,pcm_s16le,pcm_s16be,pcm_s24le,pcm_s24be,pcm_s32le,pcm_s32be,pcm_f32le,pcm_f32be,pcm_u8 \
-  --enable-parser=mpegaudio,aac,aac_latm,flac,vorbis,opus,ape
+  --enable-decoder=mp3,flac,aac,aac_latm,alac,vorbis,opus,ape,wavpack,ac3,eac3,pcm_s16le,pcm_s16be,pcm_s24le,pcm_s24be,pcm_s32le,pcm_s32be,pcm_f32le,pcm_f32be,pcm_u8 \
+  --enable-parser=mpegaudio,aac,aac_latm,flac,vorbis,opus,ape,ac3
 then
   echo "---- config.log tail ----" >&2
   tail -n 80 ffbuild/config.log >&2 || true
