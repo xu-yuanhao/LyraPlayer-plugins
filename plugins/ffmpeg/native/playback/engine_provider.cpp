@@ -63,7 +63,6 @@ OwnedPlaybackBackend make_engine_backend() {
     };
     api.quiesce = [](void *user) {
         static_cast<EngineBackend *>(user)->engine.stop();
-        static_cast<EngineBackend *>(user)->engine.quiesce_analysis();
         return 1;
     };
     api.listener = [](void *user, LyraPlaybackEventFn fn, void *target) {

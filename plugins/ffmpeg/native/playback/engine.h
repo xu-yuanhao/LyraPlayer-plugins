@@ -6,7 +6,6 @@
 #include "playback/transition_control.h"
 #include <memory>
 struct EngineTransition;
-struct EngineAnalysis;
 
 #include "platform/audio_output.h"
 
@@ -47,7 +46,6 @@ public:
     void clear_prime();
     bool take_seek_failed();
     void stop();
-    void quiesce_analysis();
     void reap();
     bool timer_active() const;
     double position_exact() const;
@@ -85,7 +83,6 @@ private:
     bool accepting_transition_=false;
     AudioTransitionControl transition_control_;
     std::unique_ptr<EngineTransition> transition_;
-    std::unique_ptr<EngineAnalysis> analysis_;
     std::atomic<bool> transition_pending_{false};
     double pcm_media_frames_=0;
     int64_t pcm_origin_us_ = -1, pcm_frames_ = 0;

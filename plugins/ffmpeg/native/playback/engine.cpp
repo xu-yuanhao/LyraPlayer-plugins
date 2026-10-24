@@ -3,12 +3,6 @@
 #include "playback/engine.h"
 #include "playback/media_metadata.h"
 #include "playback/container_probe.h"
-#include "playback/transition_math.h"
-#include "playback/transition_edges.h"
-#include "playback/adaptive/graph.h"
-#include "playback/adaptive/cache.h"
-#include "playback/adaptive/full_worker.h"
-#include "third_party/signalsmith/signalsmith-stretch.h"
 #include <condition_variable>
 #include <memory>
 #include <algorithm>
@@ -221,235 +215,67 @@ std::string read_embedded_lyrics(int fd){
     return lyrics_from_context(source.fmt);
 }
 
-struct EngineAnalysis : lyra::adaptive::FullTrackWorker<SystemDecode> {using FullTrackWorker::FullTrackWorker;};
-
 struct EngineTransition {
-    using Stretch=signalsmith::stretch::SignalsmithStretch<float>;
     struct Request {
         int fd=-1,rate=0;int64_t track=-1,duration=0;uint64_t generation=0;
-        double blend_ms=0;AudioTransitionSettings settings;AudioFeatureSettings features;
+        double blend_ms=0;AudioFeatureSettings features;
         std::atomic<bool> cancel{false};bool ok=false;
         std::unique_ptr<SystemDecode> source;
-        std::unique_ptr<Stretch> stretch;
-        TransitionBeat beat;std::string lyrics,cache_directory;
-        lyra::adaptive::TrackMap map_a,map_b;lyra::adaptive::TransitionPlan plan;
-        std::vector<int16_t> previous;size_t previous_count=0;int64_t captured_total=0;
-        std::atomic<bool> captured{false};bool cache_hit=false;
-        uint64_t a_key=0,b_key=0;int64_t a_position_us=0,b_position_us=0;
-        lyra::adaptive::FullMap full_a,full_b;lyra::adaptive::StemClip stem_a,stem_b;
+        std::string lyrics;
         ~Request(){if(fd>=0)::close(fd);}
     };
-    AudioTransitionSettings settings;int rate=0;std::string cache_directory;
-    AudioTransitionControl *control=nullptr;
-    uint64_t current_key=0;lyra::adaptive::StemClip stem_a,stem_b;bool stem_active=false;int64_t stem_a_at=0,stem_b_at=0;
-    lyra::adaptive::VocalHandoff vocals;float stem_gain=1,stem_release=0;
-    lyra::adaptive::TransitionGraph graph;int64_t history_total=0,bridge_at=0;
+    int rate=0;
     std::mutex mutex;std::condition_variable changed;
     std::shared_ptr<Request> pending,active,ready;
     pthread_t worker{};bool live=false,stopping=false;
     std::atomic<bool> mixing{false},drop_outgoing{false};
     std::unique_ptr<SystemDecode> outgoing;
-    std::unique_ptr<Stretch> stretch,outgoing_stretch;
-    double outgoing_fraction=0,outgoing_speed=1,last_speed=1;bool band_active=false;
-    std::vector<int16_t> history;size_t history_at=0,history_count=0;
-    int64_t mix_frames=0,mix_at=0,wait_frames=0;
-    double speed_start=1,media_frames=0,input_fraction=0;
-    int warm=0;bool warmed=false;
-    TransitionBands bands;
-    explicit EngineTransition(AudioTransitionSettings s,std::string cache,AudioTransitionControl *owner=nullptr):settings(s),cache_directory(std::move(cache)),control(owner){}
-    ~EngineTransition(){
-        if(control)control->analysis_busy=false;
-        {std::lock_guard<std::mutex> lock(mutex);stopping=true;if(active)active->cancel=true;if(pending)pending->cancel=true;}
-        changed.notify_all();if(live)pthread_join(worker,nullptr);
-    }
-    void set_rate(int value){rate=value;history.resize(size_t(rate*settings.analysis_ms/1000)*2);history_at=history_count=0;history_total=bridge_at=0;if(settings.adaptive.enabled)graph.prepare(rate,settings);}
-    void remember(const int16_t *pcm,int frames){if(history.empty())return;for(int i=0;i<frames*2;++i){history[history_at]=pcm[i];history_at=(history_at+1)%history.size();history_count=std::min(history_count+1,history.size());}history_total+=frames;bridge_at=0;}
-    int render_bridge(int16_t *out,int frames){
-        if(!settings.adaptive.enabled || history_count/2<size_t(rate*settings.adaptive.loop_ms/1000))return 0;
-        int length=int(std::min<size_t>(history_count/2,size_t(rate*settings.adaptive.loop_ms/1000)));
-        int cross=std::min(length/2,std::max(1,int(rate*settings.adaptive.loop_cross_ms/1000)));int period=length-cross;if(period<1)return 0;
-        int64_t maximum=int64_t(rate*settings.adaptive.bridge_max_ms/1000);frames=int(std::min<int64_t>(frames,std::max<int64_t>(0,maximum-bridge_at)));
-        size_t base=(history_at+history.size()-size_t(length)*2)%history.size();
-        for(int i=0;i<frames;++i){int x=cross+int(bridge_at%period);float blend=x>=length-cross?lyra::adaptive::curve(float(x-(length-cross))/cross):0;
-            float fade=lyra::adaptive::curve(float(maximum-bridge_at)/float(rate*settings.adaptive.bridge_fade_ms/1000));float enter=lyra::adaptive::curve(float(bridge_at)/cross);
-            for(int c=0;c<2;++c){float a=history[(base+size_t(x)*2+c)%history.size()];float b=history[(base+size_t(std::max(0,x-(length-cross)))*2+c)%history.size()];float last=history[(history_at+history.size()-2+c)%history.size()];out[i*2+c]=int16_t(((a+(b-a)*blend)*enter+last*(1-enter))*fade);}
-            ++bridge_at;
-        }return frames;
-    }
+    int64_t mix_frames=0,mix_at=0;
+    void set_rate(int value){rate=value;}
     static void *trampoline(void *user){static_cast<EngineTransition*>(user)->prepare();return nullptr;}
     bool schedule(int fd,int64_t track,int64_t duration,uint64_t generation,double blend_ms,AudioFeatureSettings features){
         std::lock_guard<std::mutex> lock(mutex);
         if(!live){if(pthread_create(&worker,nullptr,trampoline,this)!=0)return false;live=true;}
         if(active)active->cancel=true;if(pending)pending->cancel=true;ready.reset();
         auto next=std::make_shared<Request>();next->fd=fd;next->track=track;next->duration=duration;next->generation=generation;
-        next->previous.resize(history.size());next->cache_directory=cache_directory;
-        next->rate=rate;next->blend_ms=blend_ms;next->settings=settings;next->features=features;pending=std::move(next);
-        drop_outgoing=true;if(control)control->analysis_busy=true;changed.notify_all();return true;
+        next->rate=rate;next->blend_ms=blend_ms;next->features=std::move(features);pending=std::move(next);
+        drop_outgoing=true;changed.notify_all();return true;
     }
-    void cancel_mix(){if(control)control->analysis_busy=false;outgoing.reset();outgoing_stretch.reset();mixing=false;mix_frames=mix_at=wait_frames=0;changed.notify_all();}
-    void reset_seek(int output_rate){
-        cancel_mix();stretch.reset();band_active=false;media_frames=input_fraction=outgoing_fraction=0;
-        speed_start=last_speed=outgoing_speed=1;warm=0;warmed=false;stem_active=false;stem_a={};stem_b={};stem_gain=1;set_rate(output_rate);
-    }
+    void cancel_mix(){outgoing.reset();mixing=false;mix_frames=mix_at=0;changed.notify_all();}
+    void reset_seek(int output_rate){cancel_mix();set_rate(output_rate);}
     void prepare(){for(;;){std::shared_ptr<Request> job;
         {std::unique_lock<std::mutex> lock(mutex);changed.wait(lock,[&]{return stopping || (pending && !mixing.load());});if(stopping)return;job=std::move(pending);active=job;}
         auto source=std::make_unique<SystemDecode>();source->fd=job->fd;job->fd=-1;
-        bool ok=source->open() && prepare_transition_edges(*source,job->rate,job->settings,job->cancel);
-        {std::unique_lock<std::mutex> lock(mutex);changed.wait(lock,[&]{return stopping || job->cancel.load() || job->captured.load();});}
-        if(ok && !job->cancel){
-            auto *pcm=source->prepared.data()+source->prepared_pos;auto frames=(source->prepared.size()-source->prepared_pos)/2;
-            if(job->settings.adaptive.enabled){
-                job->map_a=lyra::adaptive::analyze(job->previous.data(),job->previous_count/2,job->rate,job->settings);
-                uint64_t key=lyra::adaptive::map_key(source->fd,pcm,frames,job->rate,job->settings);
-                job->cache_hit=lyra::adaptive::cache_read(job->cache_directory,key,&job->map_b);
-                if(!job->cache_hit){job->map_b=lyra::adaptive::analyze(pcm,frames,job->rate,job->settings);lyra::adaptive::cache_write(job->cache_directory,key,job->map_b,int(job->settings.adaptive.cache_entries));}
-                job->plan=lyra::adaptive::plan(job->map_a,job->map_b,job->blend_ms,job->settings);job->beat=job->map_b.rhythm();
-                job->b_key=lyra::adaptive::full_key(source->fd);job->b_position_us=std::max<int64_t>(0,source->first_media_us)+source->delivered_frames*1000000/job->rate;
-                if(job->settings.full.enabled){
-                    if(lyra::adaptive::read_full_map(job->cache_directory,job->a_key,job->settings.full,&job->full_a))lyra::adaptive::read_stem_clip(job->cache_directory,job->full_a,job->a_position_us,job->rate,job->settings.full.stem_window_ms,&job->stem_a);
-                    if(lyra::adaptive::read_full_map(job->cache_directory,job->b_key,job->settings.full,&job->full_b))lyra::adaptive::read_stem_clip(job->cache_directory,job->full_b,job->b_position_us,job->rate,job->settings.full.stem_window_ms,&job->stem_b);
-                }
-            }else{
-                auto a=transition_beat(job->previous.data(),job->previous_count/2,job->rate,job->settings);job->map_a.bpm=a.bpm;job->map_a.confidence=a.confidence;job->map_a.first_s=a.first_s;job->map_a.last_s=a.last_s;job->map_a.span_s=a.span_s;
-                job->beat=transition_beat(pcm,frames,job->rate,job->settings);
-            }
-            double confidence=job->settings.adaptive.enabled?job->settings.adaptive.confidence:job->settings.confidence;
-            if(job->beat.confidence>=confidence){job->stretch=std::make_unique<Stretch>(1);job->stretch->presetCheaper(2,job->rate);}
+        if(source->open() && !job->cancel){
             job->lyrics=read_embedded_lyrics(dup(source->fd));job->source=std::move(source);job->ok=true;
         }
         {std::lock_guard<std::mutex> lock(mutex);if(!stopping && !job->cancel)ready=job;active.reset();}
     }}
-    std::shared_ptr<Request> take(SystemDecode *source=nullptr){
-        std::lock_guard<std::mutex> lock(mutex);auto capture=pending?pending:active;
-        if(capture && !capture->captured.load()){
-            size_t first=(history_at+history.size()-history_count)%history.size();
-            for(size_t i=0;i<history_count;++i)capture->previous[i]=history[(first+i)%history.size()];
-            capture->a_key=current_key;
-            if(source)capture->a_position_us=std::max<int64_t>(0,source->first_media_us)+int64_t(stretch?media_frames:double(source->delivered_frames))*1000000/rate;
-            capture->previous_count=history_count;capture->captured_total=history_total;capture->captured=true;changed.notify_all();
-        }
+    std::shared_ptr<Request> take(){
+        std::lock_guard<std::mutex> lock(mutex);
         auto out=std::move(ready);if(out && out->ok)mixing=true;return out;
     }
     void begin(const std::shared_ptr<Request> &job,std::unique_ptr<SystemDecode> old){
-        auto a=job->map_a.rhythm();outgoing=std::move(old);mixing=true;
-        outgoing_stretch=std::move(stretch);outgoing_fraction=input_fraction;outgoing_speed=last_speed;band_active=true;
-        speed_start=1;wait_frames=0;bool matched=false;
-        auto plan=job->plan;
-        if(settings.adaptive.enabled){
-            matched=plan.mode==lyra::adaptive::Mode::BeatBlend;
-            double wait=lyra::adaptive::alignment(job->map_a,job->map_b,double(history_total-job->captured_total)/rate,plan);
-            if(matched && wait*1000<=settings.adaptive.phase_wait_ms){speed_start=plan.rate;wait_frames=int64_t(wait*rate);}
-            else{matched=false;plan.echo_wet=settings.adaptive.echo_wet;plan.rate=1;plan.mode=job->map_a.confidence>=settings.adaptive.confidence?lyra::adaptive::Mode::EchoBridge:lyra::adaptive::Mode::TextureBridge;}
-        }else if(a.confidence>=settings.confidence && job->beat.confidence>=settings.confidence && job->beat.bpm>0){
-            double ratio=a.bpm/job->beat.bpm;
-            if(std::abs(ratio-1)<=settings.max_rate_delta){
-                double period=60/a.bpm;double until=std::fmod(period-std::fmod(a.span_s+double(history_total-job->captured_total)/rate-a.last_s,period)-job->beat.first_s/ratio,period);if(until<0)until+=period;
-                if(until*1000<=settings.bridge_ms){speed_start=ratio;wait_frames=int64_t(until*rate);matched=true;}
-            }
-        }
-        lyra_log(LyraLogInfo,"Lyra","transition analysis a_bpm=%g a_conf=%g b_bpm=%g b_conf=%g",a.bpm,a.confidence,job->beat.bpm,job->beat.confidence);
-        // Uncertain rhythm disables tempo matching, not the audible handover.
-        double blend_ms=settings.adaptive.enabled?plan.duration_ms:job->blend_ms;
-        AudioTransitionSettings band_settings=settings;
-        if(matched){
-            double period=60/a.bpm;
-            int beats=int(std::floor(job->blend_ms/1000/period/settings.beat_group)*settings.beat_group);
-            if(beats<int(settings.beat_group)){matched=false;speed_start=1;wait_frames=0;}
-            else{
-                double seconds=beats*period;blend_ms=seconds*1000;
-                double first=std::fmod(job->beat.first_s/speed_start,period);
-                double centre=first+std::round((seconds*.5-first)/period)*period;
-                double half=(settings.bass_end-settings.bass_start)*.5;
-                double mid=std::clamp(centre/seconds,half,1-half);
-                band_settings.bass_start=mid-half;band_settings.bass_end=mid+half;
-            }
-        }
-        double a_position=double(job->a_position_us)/1000000+double(history_total-job->captured_total)/rate;
-        double b_position=double(job->b_position_us)/1000000;
-        bool cached_a=!job->stem_a.pcm.empty(),cached_b=!job->stem_b.pcm.empty();
-        stem_active=settings.full.enabled && settings.adaptive.enabled && !job->stem_b.pcm.empty();
-        if(stem_active){
-            if(outgoing_stretch)job->stem_a.pcm.clear();
-            vocals=lyra::adaptive::vocal_handoff(job->full_a,job->full_b,a_position,b_position,blend_ms/1000,settings.full);
-            if(!vocals.enabled){vocals.enabled=true;vocals.fade_s=settings.full.vocal_fade_ms/1000;vocals.exit_s=vocals.fade_s;}
-            if(!job->stem_a.pcm.empty() && !job->stem_a.contains(int64_t((a_position+vocals.wait_s)*1000000),int64_t(blend_ms*1000)))job->stem_a.pcm.clear();
-            // Partial or tempo-misaligned stems cannot safely control the whole outgoing song.
-            // Keep the complete adaptive mix when either aligned deck is unavailable.
-            if(job->stem_a.pcm.empty() || !job->stem_b.contains(job->b_position_us,int64_t(blend_ms*1000)))stem_active=false;
-            if(stem_active){
-                matched=false;speed_start=1;wait_frames=int64_t(vocals.wait_s*rate);plan.mode=lyra::adaptive::Mode::TextureBridge;plan.echo_wet=settings.adaptive.echo_wet;
-                for(const auto &phrase:job->full_a.phrases){double duration=phrase.seconds-a_position-vocals.wait_s;if(phrase.confidence>=settings.full.confidence && duration>=settings.full.phrase_min_ms/1000 && duration<=blend_ms/1000){blend_ms=duration*1000;break;}}
-                lyra::adaptive::fit_vocal_handoff(vocals,blend_ms/1000);
-                stem_a_at=int64_t((a_position+vocals.wait_s-double(job->stem_a.start_us)/1000000)*rate);stem_b_at=(job->b_position_us-job->stem_b.start_us)*rate/1000000;
-                stem_a=std::move(job->stem_a);stem_b=std::move(job->stem_b);stem_gain=1;stem_release=float(1-std::exp(-1000/(rate*settings.limiter_release_ms)));
-                lyra_log(LyraLogInfo,"Lyra","stem handoff A=%d B=1 phrases=%zu/%zu wait_ms=%g vocal_exit_ms=%g",!stem_a.pcm.empty(),job->full_a.phrases.size(),job->full_b.phrases.size(),vocals.wait_s*1000,vocals.exit_s*1000);
-            }
-        }
-        lyra_log(LyraLogInfo,"Lyra","transition stem route enabled=%d cache_a=%d cache_b=%d",stem_active,cached_a,cached_b);
-        current_key=job->b_key;
-        stretch=matched?std::move(job->stretch):nullptr;
-        mix_frames=std::max<int64_t>(1,int64_t(rate*blend_ms/1000));mix_at=0;
-        media_frames=double(job->source->delivered_frames);input_fraction=0;warmed=false;warm=stretch?int(std::ceil(stretch->inputLatency()/speed_start))+stretch->outputLatency():0;
-        bands.configure(rate,band_settings);
-        if(settings.adaptive.enabled){plan.duration_ms=blend_ms;graph.arm(rate,plan,band_settings,history,history_at,history_count);lyra_log(LyraLogInfo,"Lyra","adaptive plan mode=%d cache=%d A=%g/%g B=%g/%g echo_ms=%g gain_b=%g",int(plan.mode),job->cache_hit,a.bpm,a.confidence,job->beat.bpm,job->beat.confidence,plan.echo_ms,plan.gain_b);}
-        history_at=history_count=0;bridge_at=0;
-        lyra_log(LyraLogInfo,"Lyra","transition begin matched=%d ratio=%g duration_ms=%g",matched,speed_start,double(mix_frames)*1000/rate);
+        outgoing=std::move(old);mixing=true;
+        mix_frames=std::max<int64_t>(1,int64_t(rate*job->blend_ms/1000));mix_at=0;
+        lyra_log(LyraLogInfo,"Lyra","transition begin crossfade duration_ms=%g",double(mix_frames)*1000/rate);
     }
-    bool process(Stretch &processor,SystemDecode &source,double &fraction,int16_t *out,int count,double speed,const std::atomic<bool> &cancel){
-        fraction+=count*speed;int need=int(fraction);fraction-=need;
-        int16_t pcm[512*2]{};float a[512]{},b[512]{},left[256]{},right[256]{};
-        if(count>256 || need>512 || need<0)return false;
-        int got=source.pull(pcm,need,rate,cancel);if(got<0)return false;
-        for(int i=0;i<got;++i){a[i]=pcm[i*2]/32768.f;b[i]=pcm[i*2+1]/32768.f;}
-        const float *in[2]={a,b};float *dest[2]={left,right};processor.process(in,need,dest,count);
-        for(int i=0;i<count;++i){
-            if(!std::isfinite(left[i]) || !std::isfinite(right[i]))return false;
-            float peak=std::max(1.f,std::max(std::abs(left[i]),std::abs(right[i])));
-            out[i*2]=int16_t(std::clamp(left[i]/peak*32767.f,-32768.f,32767.f));
-            out[i*2+1]=int16_t(std::clamp(right[i]/peak*32767.f,-32768.f,32767.f));
-        }
-        return true;
-    }
-    int render(SystemDecode &source,int16_t *out,int frames,const std::atomic<bool> &cancel,double *speed){
-        if(!outgoing && mix_frames>0)mix_at+=frames;
-        double recovery=std::clamp(double(std::max<int64_t>(0,mix_at-mix_frames))*1000/(rate*settings.return_ms),0.,1.);
-        recovery=recovery*recovery*(3-2*recovery);*speed=1+std::round((speed_start-1)*(1-recovery)*1024)/1024;last_speed=*speed;
-        if(!stretch)return source.pull(out,frames,rate,cancel);
-        int16_t discard[256*2]{};
-        while(warm>0 && !cancel.load()){int n=std::min(warm,256);if(!process(*stretch,source,input_fraction,discard,n,*speed,cancel))return -1;warm-=n;}
-        if(cancel.load())return 0;
-        if(source.output_end && source.prepared_pos>=source.prepared.size() && source.stereo_pos>=source.stereo.size()){
-            double remaining=double(source.total_frames)-media_frames;
-            frames=std::min(frames,int(std::max(0.,std::ceil(remaining/(*speed)))));
-        }
-        if(frames<=0)return 0;
-        return process(*stretch,source,input_fraction,out,frames,*speed,cancel)?frames:-1;
+    int render(SystemDecode &source,int16_t *out,int frames,const std::atomic<bool> &cancel){
+        return source.pull(out,frames,rate,cancel);
     }
     void mix(int16_t *incoming,int frames,const std::atomic<bool> &cancel){
-        if(!band_active)return;
-        int16_t old[256*2]{};int n=0;
-        if(outgoing){n=outgoing_stretch?(process(*outgoing_stretch,*outgoing,outgoing_fraction,old,frames,outgoing_speed,cancel)?frames:0):outgoing->pull(old,frames,rate,cancel);if(n<0)n=0;}
-        if(settings.adaptive.enabled)graph.block(outgoing?float(double(mix_at)/mix_frames):1,rate);
-        for(int i=0;i<frames;++i){float a[2]={i<n?old[i*2]/32768.f:0,i<n?old[i*2+1]/32768.f:0},b[2]={incoming[i*2]/32768.f,incoming[i*2+1]/32768.f},out[2]{};
-            if(stem_active && outgoing){
-                float av[2]{},bv[2]{},other_a[2],other_b[2];stem_a.sample(stem_a_at+mix_at,av);stem_b.sample(stem_b_at+mix_at,bv);
-                double elapsed=double(mix_at)/rate;float ga=1-lyra::adaptive::curve(float((elapsed-vocals.exit_s+vocals.fade_s)/vocals.fade_s)),gb=lyra::adaptive::curve(float((elapsed-vocals.exit_s)/vocals.fade_s));
-                for(int c=0;c<2;++c){other_a[c]=a[c]-av[c];other_b[c]=b[c]-bv[c];}
-                graph.step(other_a,other_b,float(double(mix_at)/mix_frames),out);for(int c=0;c<2;++c)out[c]+=av[c]*ga+bv[c]*gb;
-            }else if(settings.adaptive.enabled)graph.step(a,b,outgoing?float(double(mix_at)/mix_frames):1,out);else bands.step(a,b,outgoing?float(double(mix_at)/mix_frames):1,out);
-            if(stem_active){float peak=std::max({float(settings.peak_limit),std::abs(out[0]),std::abs(out[1])}),wanted=float(settings.peak_limit)/peak;stem_gain=std::min(wanted,stem_gain+stem_release*(wanted-stem_gain));for(float &x:out)x*=stem_gain;}
-            if(outgoing)++mix_at;
-            for(int c=0;c<2;++c)incoming[i*2+c]=int16_t(std::clamp(out[c]*32767.f,-32768.f,32767.f));}
-        if(outgoing && mix_at>=mix_frames){if(control)control->analysis_busy=false;outgoing.reset();outgoing_stretch.reset();mixing=false;changed.notify_all();}
+        if(!outgoing)return;
+        int16_t old[256*2]{};int n=outgoing->pull(old,frames,rate,cancel);if(n<0)n=0;
+        audio_crossfade(incoming,n>0?old:nullptr,frames,mix_at,mix_frames);
+        mix_at+=frames;
+        if(mix_at>=mix_frames){outgoing.reset();mixing=false;changed.notify_all();}
     }
 
 };
-Engine::Engine() { sem_init(&sem_, 0, 0);analysis_=std::make_unique<EngineAnalysis>(transition_control_); }
-void Engine::quiesce_analysis(){analysis_.reset();}
+Engine::Engine() { sem_init(&sem_, 0, 0); }
 
 Engine::~Engine() {
     stop();
-    quiesce_analysis();
     sem_destroy(&sem_);
 }
 
@@ -468,8 +294,6 @@ void Engine::error_cb(void *user, lyra::audio::Result error) { static_cast<Engin
 void Engine::start(int fd, int64_t track, int64_t duration, const AudioFeatureSettings &settings,
                    uint64_t generation, const AudioOutputSettings &output) {
     auto transition_settings=transition_control_.settings();
-    if(!analysis_)analysis_=std::make_unique<EngineAnalysis>(transition_control_);
-    transition_control_.enqueue_analysis(fd,track,std::max<int64_t>(0,duration)*1000);
     std::unique_lock<std::mutex> handoff(handoff_mu_);
     auto before=snapshot(0,false);bool pending_transition=transition_pending_.load();
     if(fd>=0 && transition_settings.enabled && transition_ && accepting_transition_ && thread_live_.load() && !stop_.load() &&
@@ -480,7 +304,7 @@ void Engine::start(int fd, int64_t track, int64_t duration, const AudioFeatureSe
             c.generation=generation;c.track_id=track;c.duration_us=std::max<int64_t>(0,duration)*1000;
             c.origin_us=c.frozen_us=0;c.ready=c.timestamp_valid=false;c.seeking=true;c.pcm.reset();c.seek_serial=c.landed_seek=0;++c.revision;
         });
-        double remaining=std::max<int64_t>(0,transition_control_.audible_end(before.generation,before.duration_us)-before.position_us)/1000.;
+        double remaining=std::max<int64_t>(0,before.duration_us-before.position_us)/1000.;
         double blend=!pending_transition && remaining<=transition_settings.automatic_ms?std::min(remaining,transition_settings.automatic_ms):transition_settings.manual_ms;
         memory_->select(track,0,duration);
         if(transition_->schedule(fd,track,duration,generation,blend,settings)){
@@ -490,7 +314,7 @@ void Engine::start(int fd, int64_t track, int64_t duration, const AudioFeatureSe
     handoff.unlock();
     release_writer(false);
     transition_pending_=false;
-    if(transition_settings.enabled)transition_=std::make_unique<EngineTransition>(transition_settings,transition_control_.cache_directory(),&transition_control_);
+    if(transition_settings.enabled)transition_=std::make_unique<EngineTransition>();
     {
         std::lock_guard<std::mutex> lock(lyrics_mu_);
         lyrics_text_.clear();
@@ -1117,11 +941,9 @@ void Engine::decode_main() {
     {
         auto source=std::make_unique<SystemDecode>();source->fd=fd_;fd_=-1;
         auto transition_settings=transition_control_.settings();
-        if(source->open() && open_output(source->sample_rate) && (!transition_settings.enabled || prepare_transition_edges(*source,rate_.load(),transition_settings,stop_))){
-            transition_control_.publish_edges(clock_.access([](const PlaybackClockState &c){return c.generation;}),source->audible_end_us);
-            lyra_log(LyraLogInfo,"Lyra","ffmpeg transition edges track=%lld head_ms=%g end_ms=%g",(long long)clock_.access([](const PlaybackClockState &c){return c.track_id;}),double(source->delivered_frames)*1000/rate_.load(),double(source->audible_end_us)/1000);
+        if(source->open() && open_output(source->sample_rate)){
             ok=true;
-            if(transition_){transition_->set_rate(rate_.load());transition_->current_key=lyra::adaptive::full_key(source->fd);}
+            if(transition_)transition_->set_rate(rate_.load());
             if(source->duration_us>0)clock_.access([&](PlaybackClockState &c){c.duration_us=source->duration_us;});
             publish_lyrics(read_embedded_lyrics(dup(source->fd)));
             auto apply_seek = [&]() {
@@ -1189,13 +1011,11 @@ void Engine::decode_main() {
                 auto *transition=transition_.get();
                 if(transition && transition->drop_outgoing.exchange(false))transition->cancel_mix();
                 if(transition_pending_.load() && transition){
-                    auto ready=transition->take(source.get());
+                    auto ready=transition->take();
                     std::unique_lock<std::mutex> accept(handoff_mu_);
                     if(ready && !ready->cancel && clock_.access([&](const PlaybackClockState &c){return c.generation==ready->generation;})){
                         if(!ready->ok){accepting_transition_=false;ok=false;break;}
                         transition->begin(ready,std::move(source));source=std::move(ready->source);
-                        transition_control_.publish_edges(ready->generation,source->audible_end_us);
-                        lyra_log(LyraLogInfo,"Lyra","ffmpeg transition edges track=%lld head_ms=%g end_ms=%g",(long long)ready->track,double(source->delivered_frames)*1000/rate_.load(),double(source->audible_end_us)/1000);
                         source_generation=ready->generation;feature_settings_=ready->features;
                         {std::lock_guard<std::mutex> lock(lyrics_mu_);lyrics_text_.clear();lyrics_pending_=false;}
                         publish_lyrics(std::move(ready->lyrics));
@@ -1203,12 +1023,6 @@ void Engine::decode_main() {
                     }
                 }
                 if(begin_target && clock_.access([&](const PlaybackClockState &c){return c.generation!=source_generation;}))begin_target=false;
-                if(begin_target && transition && transition->wait_frames>0 && seek_ms_.load()<0){
-                    int16_t outgoing[256*2]{};int want=int(std::min<int64_t>(256,transition->wait_frames));
-                    int got=transition->outgoing?(transition->outgoing_stretch?(transition->process(*transition->outgoing_stretch,*transition->outgoing,transition->outgoing_fraction,outgoing,want,transition->outgoing_speed,stop_)?want:0):transition->outgoing->pull(outgoing,want,rate_.load(),stop_)):0;
-                    if(got>0){feed(outgoing,got*2,0);transition->wait_frames-=got;continue;}
-                    transition->wait_frames=0;
-                }
                 if(begin_target){
                     auto base=std::max<int64_t>(0,lyra::audio::written(stream_.load()));
                     pcm_origin_us_=-1;pcm_frames_=0;pcm_media_frames_=0;
@@ -1227,21 +1041,20 @@ void Engine::decode_main() {
                     apply_seek();continue;
                 }
                 int16_t pcm[256*2]{};double speed=1;
-                int frames=transition?transition->render(*source,pcm,256,stop_,&speed):source->pull(pcm,256,rate_.load(),stop_);
+                int frames=transition?transition->render(*source,pcm,256,stop_):source->pull(pcm,256,rate_.load(),stop_);
                 if(frames<0){ok=false;break;}
                 if(frames==0){
                     if(transition_pending_.load()){
-                        int bridge=transition?transition->render_bridge(pcm,256):0;
-                        if(bridge>0)feed(pcm,bridge*2,0);else{timespec delay{0,1000000};nanosleep(&delay,nullptr);}continue;
+                        {timespec delay{0,1000000};nanosleep(&delay,nullptr);}continue;
                     }
                     if(started_.load())wait_for_drain();
                     if(seek_ms_.load()>=0 || transition_pending_.load())continue;
                     {std::lock_guard<std::mutex> lock(handoff_mu_);if(transition_pending_.load())continue;accepting_transition_=false;}
                     break;
                 }
-                double media=transition && transition->stretch?transition->media_frames:double(source->delivered_frames-frames);
+                double media=double(source->delivered_frames-frames);
                 int64_t pts=std::max<int64_t>(0,source->first_media_us)+int64_t(media*1000000/rate_.load());
-                if(transition){transition->mix(pcm,frames,stop_);transition->remember(pcm,frames);transition->media_frames+=frames*speed;}
+                if(transition)transition->mix(pcm,frames,stop_);
                 feed(pcm,frames*2,pts,speed);
             }
             if(ok && !stop_.load()){memory_->update(0);memory_->checkpoint();}

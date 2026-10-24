@@ -1,3 +1,8 @@
+## 1.4.1
+- Track changes now use a plain linear crossfade; the adaptive analysis, tempo
+  matching, stem handoff and the transition-stems dependency are removed.
+- No analysis caches are written anymore.
+
 # 1.4.0
 
 - 增加 AC-3 与 E-AC-3（Dolby Digital / Dolby Digital Plus、含 Atmos 音轨）解码，之前这类 m4a 只能退回系统解码器。

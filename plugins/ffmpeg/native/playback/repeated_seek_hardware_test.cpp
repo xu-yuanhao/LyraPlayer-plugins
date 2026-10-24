@@ -18,37 +18,13 @@ template<class F> static bool until(F fn){for(int i=0;i<2000;++i){if(fn())return
 std::atomic<int> real_opens{0},real_xruns{0},probe_result{0};std::atomic<int64_t> probe_frame{0},probe_written{0},probe_read{0},probe_stamp{0};
 static void u16(FILE* f,unsigned v){std::fputc(v&255,f);std::fputc((v>>8)&255,f);}
 static void u32(FILE* f,unsigned v){u16(f,v);u16(f,v>>16);}
-#include "playback/edge_fixture_test.h"
-#include "playback/adaptive_fixture_test.h"
 int main(int argc,char **argv){check(argc>1,"configuration path");const int fixture_rate=argc>3?std::atoi(argv[3]):48000;check(fixture_rate==48000 || fixture_rate==44100,"fixture rate");Engine engine;AudioFeatureSettings features{180,1800,10,1};
         Toml toml;std::string error;check(toml.parse(read_text_file(argv[1]),&error),"transition config fixture");
         AudioTransitionSettings settings;check(toml.require_bool("audio_transition.enabled",&settings.enabled,&error),"transition enabled fixture");
         check(toml.require_number("audio_transition.automatic_ms",&settings.automatic_ms,&error),"transition automatic_ms fixture");
         check(toml.require_number("audio_transition.manual_ms",&settings.manual_ms,&error),"transition manual_ms fixture");
-        check(toml.require_number("audio_transition.bridge_ms",&settings.bridge_ms,&error),"transition bridge_ms fixture");
-        check(toml.require_number("audio_transition.analysis_ms",&settings.analysis_ms,&error),"transition analysis_ms fixture");
-        check(toml.require_number("audio_transition.confidence",&settings.confidence,&error),"transition confidence fixture");
-        check(toml.require_number("audio_transition.max_rate_delta",&settings.max_rate_delta,&error),"transition max_rate_delta fixture");
-        check(toml.require_number("audio_transition.bass_hz",&settings.bass_hz,&error),"transition bass_hz fixture");
-        check(toml.require_number("audio_transition.return_ms",&settings.return_ms,&error),"transition return_ms fixture");
-        check(toml.require_number("audio_transition.feature_hz",&settings.feature_hz,&error),"transition feature_hz fixture");
-        check(toml.require_number("audio_transition.bpm_min",&settings.bpm_min,&error),"transition bpm_min fixture");
-        check(toml.require_number("audio_transition.bpm_max",&settings.bpm_max,&error),"transition bpm_max fixture");
-        check(toml.require_number("audio_transition.onset_floor",&settings.onset_floor,&error),"transition onset_floor fixture");
-        check(toml.require_number("audio_transition.peak_factor",&settings.peak_factor,&error),"transition peak_factor fixture");
-        check(toml.require_number("audio_transition.minimum_onsets",&settings.minimum_onsets,&error),"transition minimum_onsets fixture");
-        check(toml.require_number("audio_transition.confident_onsets",&settings.confident_onsets,&error),"transition confident_onsets fixture");
-        check(toml.require_number("audio_transition.interval_penalty",&settings.interval_penalty,&error),"transition interval_penalty fixture");
-        check(toml.require_number("audio_transition.bass_start",&settings.bass_start,&error),"transition bass_start fixture");
-        check(toml.require_number("audio_transition.bass_end",&settings.bass_end,&error),"transition bass_end fixture");
-        check(toml.require_number("audio_transition.limiter_release_ms",&settings.limiter_release_ms,&error),"transition limiter_release_ms fixture");
-        check(toml.require_number("audio_transition.peak_limit",&settings.peak_limit,&error),"transition peak_limit fixture");
-        check(toml.require_number("audio_transition.maximum_track_fraction",&settings.maximum_track_fraction,&error),"transition maximum_track_fraction fixture");
-        check(toml.require_number("audio_transition.beat_group",&settings.beat_group,&error),"transition beat_group fixture");
 
-        load_adaptive_settings(toml,settings);
         check(configure_transition(engine.transition_interface(),settings)==0,"configure real engine transition");
-        test_transition_edges(engine,settings,features,toml);
         auto drum_fixture=[&](int bpm,int channel){
             const int input_rate=channel?(fixture_rate==48000?44100:48000):fixture_rate;
             char path[96];std::snprintf(path,sizeof(path),"/data/local/tmp/lyra-mix-%d-%d.wav",int(getpid()),channel);

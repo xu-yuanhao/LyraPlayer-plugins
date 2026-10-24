@@ -1,5 +1,5 @@
 id = "official.ffmpeg"
-version = "1.4.0"
+version = "1.4.1"
 abi = 3
 type = "playback"
 entry = "plugin.so"

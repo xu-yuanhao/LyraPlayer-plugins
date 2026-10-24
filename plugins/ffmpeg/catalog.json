@@ -1,7 +1,7 @@
 {
   "id": "official.ffmpeg",
   "title": "FFmpeg 播放引擎",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "abi": 3,
   "platform": "android",
   "arch": "arm64-v8a",
