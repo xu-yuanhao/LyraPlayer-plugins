@@ -1,3 +1,6 @@
+## 1.4.2
+- 锁屏 / 息屏播放时自动改用更大的音频缓冲，减少 CPU 唤醒、更省电；亮屏自动恢复小缓冲，保持低延迟、操作跟手。
+
 ## 1.4.1
 - Track changes now use a plain linear crossfade; the adaptive analysis, tempo
   matching, stem handoff and the transition-stems dependency are removed.

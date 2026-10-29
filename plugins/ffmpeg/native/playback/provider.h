@@ -13,6 +13,7 @@ struct OwnedPlaybackBackend {
     void (*attach_memory)(void *, ProgressMemory *) = nullptr;
     bool (*seek_failed)(void *) = nullptr;
     void (*underruns)(void *) = nullptr;
+    void (*set_screen_query)(void *, int (*)(void *), void *) = nullptr;
 };
 OwnedPlaybackBackend make_engine_backend();
 inline LyraPlaybackSnapshotV3 playback_export(const PlaybackSnapshot &s) {

@@ -671,9 +671,10 @@ void Engine::close_stream() {
 bool Engine::open_output(int preferred_rate) {
     std::lock_guard<std::recursive_mutex> control(stream_mu_);
     auto *existing = stream_.load(std::memory_order_acquire);
+    const AudioOutputSettings want = desired_output();
     if (existing && preferred_rate >= 8000 && lyra::audio::sample_rate(existing) == preferred_rate &&
-        stream_settings_.capacity_ms == output_settings_.capacity_ms &&
-        stream_settings_.bursts == output_settings_.bursts) {
+        stream_settings_.capacity_ms == want.capacity_ms &&
+        stream_settings_.bursts == want.bursts) {
         reset_features(preferred_rate);
         last_xruns_ = lyra::audio::xruns(existing);
         lyra_log(LyraLogInfo, "Lyra", "play stream reuse rate=%d", preferred_rate);
@@ -681,16 +682,58 @@ bool Engine::open_output(int preferred_rate) {
     }
     if (existing)
         close_stream();
-    auto *stream = lyra::audio::open(preferred_rate, output_settings_, &Engine::error_cb, this);
+    auto *stream = lyra::audio::open(preferred_rate, want, &Engine::error_cb, this);
     if (!stream) {
         log_fail("stream", 0);
         return false;
     }
     stream_.store(stream, std::memory_order_release);
-    stream_settings_ = output_settings_;
+    stream_settings_ = want;
     reset_features(lyra::audio::sample_rate(stream));
     last_xruns_ = lyra::audio::xruns(stream);
     return true;
+}
+AudioOutputSettings Engine::desired_output() const {
+    AudioOutputSettings want = output_settings_;
+    // Screen on: let the device pick its small low-latency buffer. Screen off:
+    // reserve the configured capacity so the writer wakes the CPU far less often.
+    if (screen_active_.load(std::memory_order_acquire))
+        want.capacity_ms = 0;
+    return want;
+}
+bool Engine::begin_output_recovery() {
+    return clock_.access([&](PlaybackClockState &c) {
+        if (!c.active)
+            return false;
+        if (recover_output_.exchange(true, std::memory_order_acq_rel))
+            return true;
+        auto audible = c.sample(now_ns());
+        c.origin_us = c.frozen_us = audible.position_us;
+        c.origin_frame = c.frozen_frame = audible.output_frame;
+        c.ready = false;
+        c.timestamp_valid = false;
+        c.pcm.reset();
+        c.seeking = true;
+        if (seek_ms_.load(std::memory_order_acquire) < 0) {
+            ++c.seek_serial;
+            seek_origin_ = kRecoverySeek;
+            seek_ms_.store(audible.position_us / 1000, std::memory_order_release);
+        }
+        return true;
+    });
+}
+void Engine::set_screen_query(int (*fn)(void*), void* user) {
+    screen_query_ = fn;
+    screen_query_user_ = user;
+}
+void Engine::set_screen_active(bool active) {
+    if (screen_active_.exchange(active, std::memory_order_acq_rel) == active)
+        return;
+    lyra_log(LyraLogInfo, "Lyra", "screen active=%d", active ? 1 : 0);
+    if (stream_.load(std::memory_order_acquire) == nullptr)
+        return;
+    if (begin_output_recovery())
+        sem_post(&sem_);
 }
 
 void Engine::feed(const int16_t *src, int count, int64_t frame_us, double speed) {
@@ -901,25 +944,7 @@ void Engine::maybe_start() {
 void Engine::on_error(lyra::audio::Result error) {
     lyra_log(LyraLogInfo, "Lyra", "play stream error %d", (int)error);
     if (error == lyra::audio::ErrorDisconnected && !stop_.load(std::memory_order_acquire)) {
-        bool recover = clock_.access([&](PlaybackClockState &c) {
-            if (!c.active)
-                return false;
-            if (recover_output_.exchange(true, std::memory_order_acq_rel))
-                return true;
-            auto audible = c.sample(now_ns());
-            c.origin_us = c.frozen_us = audible.position_us;
-            c.origin_frame = c.frozen_frame = audible.output_frame;
-            c.ready = false;
-            c.timestamp_valid = false;
-            c.pcm.reset();
-            c.seeking = true;
-            if (seek_ms_.load(std::memory_order_acquire) < 0) {
-                ++c.seek_serial;
-                seek_origin_ = kRecoverySeek;
-                seek_ms_.store(audible.position_us / 1000, std::memory_order_release);
-            }
-            return true;
-        });
+        bool recover = begin_output_recovery();
         if (recover) {
             sem_post(&sem_);
             return;
@@ -1035,6 +1060,13 @@ void Engine::decode_main() {
                         c.ready=c.timestamp_valid=false;c.pcm.reset();c.restart(base,now_ns());c.seeking=seek_ms_.load()>=0;transition_pending_=false;
                     });
                     begin_target=false;
+                }
+                if (screen_query_) {
+                    int64_t nowp = now_ns();
+                    if (nowp >= next_screen_poll_ns_) {
+                        next_screen_poll_ns_ = nowp + 1000000000LL;
+                        set_screen_active(screen_query_(screen_query_user_) != 0);
+                    }
                 }
                 if(seek_ms_.load()>=0){
                     if(transition_pending_.load()){timespec delay{0,1000000};nanosleep(&delay,nullptr);continue;}

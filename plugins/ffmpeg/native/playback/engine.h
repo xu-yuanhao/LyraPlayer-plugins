@@ -30,6 +30,10 @@ public:
 
     void set_memory(ProgressMemory* memory){memory_=memory?memory:&private_memory_;}
     void set_listener(void (*fn)(void* user, int event, uint64_t generation), void* user);
+    // Polled once a second from the decode thread: returns non-zero while the
+    // screen is interactive. Screen-off enlarges the output buffer (less CPU
+    // wake-up), screen-on shrinks it back for low latency.
+    void set_screen_query(int (*fn)(void*), void* user);
     const LyraAudioTransitionV3 *transition_interface()const{return transition_control_.interface();}
     void start(int fd, int64_t track, int64_t duration, const AudioFeatureSettings& settings, uint64_t generation,
                const AudioOutputSettings& output = {});
@@ -62,6 +66,9 @@ private:
     void decode_main();
     void on_error(lyra::audio::Result error);
     bool open_output(int preferred_rate);
+    AudioOutputSettings desired_output() const;
+    bool begin_output_recovery();
+    void set_screen_active(bool active);
     void release_writer(bool keep);
     bool discard_pending(lyra::audio::Stream* stream);
     void close_stream();
@@ -79,6 +86,10 @@ private:
     AudioFeatureSettings feature_settings_;
     AudioOutputSettings output_settings_;
     AudioOutputSettings stream_settings_;
+    std::atomic<bool> screen_active_{true};
+    int (*screen_query_)(void*) = nullptr;
+    void* screen_query_user_ = nullptr;
+    int64_t next_screen_poll_ns_ = 0;
     std::mutex handoff_mu_;
     bool accepting_transition_=false;
     AudioTransitionControl transition_control_;

@@ -102,5 +102,8 @@ OwnedPlaybackBackend make_engine_backend() {
     };
     out.seek_failed = [](void *user) { return static_cast<EngineBackend *>(user)->engine.take_seek_failed(); };
     out.underruns = [](void *user) { static_cast<EngineBackend *>(user)->engine.log_underruns(); };
+    out.set_screen_query = [](void *user, int (*fn)(void *), void *quser) {
+        static_cast<EngineBackend *>(user)->engine.set_screen_query(fn, quser);
+    };
     return out;
 }
