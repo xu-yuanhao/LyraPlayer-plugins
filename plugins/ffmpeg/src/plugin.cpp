@@ -4,6 +4,8 @@
 #include "platform/log.h"
 #include <cstring>
 #include <mutex>
+#include <atomic>
+#include "screen_throttle.h"
 #include "playback/transition_control.h"
 #ifndef LYRA_PLUGIN_VERSION
 #error "Build must provide the catalog plugin version"
@@ -45,7 +47,15 @@ static void screen_jni_init(void *vm, void *context) {
     if (env->ExceptionCheck()) env->ExceptionClear();
     if (attached) g_vm->DetachCurrentThread();
 }
+static std::atomic<bool> screen_throttle{false};
+static void refresh_screen_throttle() {
+    char text[4096]{};
+    int count=platform_host && platform_host->config_text
+        ? platform_host->config_text(platform_host->user,"system",text,sizeof(text)) : 0;
+    screen_throttle.store(count>0 && count<int(sizeof(text))-1 && screen_throttle_enabled(text),std::memory_order_release);
+}
 static int screen_active_query(void *) {
+    if (!screen_throttle.load(std::memory_order_acquire)) return 1;
     if (!g_power) {
         if (platform_host) screen_jni_init(platform_host->java_vm, platform_host->android_context);
         if (!g_power) return 1;
@@ -65,13 +75,25 @@ static int screen_active_query(void *) {
     return on;
 }
 static OwnedPlaybackBackend backend;
+static LyraAudioTransitionV3 transition_api{};
+static const LyraAudioTransitionV3 *native_transition=nullptr;
+static int transition_request(void *,const LyraMessageV3 *message,LyraReplyV3 *reply) {
+    int result=native_transition->request(native_transition->user,message,reply);
+    // Host configuration commits configure this interface on the main thread.
+    // Read the host table here, never from the decoder/output worker.
+    if(result==LYRA_MESSAGE_OK && message && message->size==sizeof(*message) &&
+       message->operation==LYRA_TRANSITION_CONFIGURE) refresh_screen_throttle();
+    return result;
+}
 static int (*native_command)(void*,const LyraPlaybackCommandV3*)=nullptr;
 static int command(void *user,const LyraPlaybackCommandV3 *c){return native_command?native_command(user,c):-1;}
-static int init(const LyraHostV3 *host){backend=make_engine_backend();platform_host=host;native_command=backend.api.command;backend.api.command=command;
- if(backend.set_screen_query){if(host->java_vm&&host->android_context)screen_jni_init(host->java_vm,host->android_context);backend.set_screen_query(backend.api.user,screen_active_query,nullptr);}
+static int init(const LyraHostV3 *host){backend=make_engine_backend();platform_host=host;refresh_screen_throttle();native_transition=backend.transition;
+ if(native_transition)transition_api={sizeof(transition_api),LYRA_INTERFACE_VERSION,nullptr,transition_request};
+ native_command=backend.api.command;backend.api.command=command;
+ if(backend.set_screen_query){backend.set_screen_query(backend.api.user,screen_active_query,nullptr);}
  lyra_log(LyraLogInfo,"Lyra","ffmpeg playback provider ready version=%s",LYRA_PLUGIN_VERSION);return backend.api.user?0:-1;}
-static void shutdown(const LyraHostV3*){if(backend.destroy)backend.destroy(backend.api.user);backend={};platform_host=nullptr;native_command=nullptr;}
-static const void* query(const LyraHostV3*,uint32_t id,uint32_t version,uint32_t size){if(id==LYRA_INTERFACE_AUDIO_TRANSITION&&version==LYRA_INTERFACE_VERSION&&size==sizeof(LyraAudioTransitionV3))return backend.transition;return id==LYRA_INTERFACE_PLAYBACK_PROVIDER&&version==LYRA_INTERFACE_VERSION&&size==sizeof(backend.api)?&backend.api:nullptr;}
+static void shutdown(const LyraHostV3*){if(backend.destroy)backend.destroy(backend.api.user);backend={};platform_host=nullptr;native_command=nullptr;native_transition=nullptr;transition_api={};screen_throttle=false;}
+static const void* query(const LyraHostV3*,uint32_t id,uint32_t version,uint32_t size){if(id==LYRA_INTERFACE_AUDIO_TRANSITION&&version==LYRA_INTERFACE_VERSION&&size==sizeof(LyraAudioTransitionV3))return native_transition?&transition_api:nullptr;return id==LYRA_INTERFACE_PLAYBACK_PROVIDER&&version==LYRA_INTERFACE_VERSION&&size==sizeof(backend.api)?&backend.api:nullptr;}
 extern "C" __attribute__((visibility("default"))) int lyra_plugin_init(const LyraHostV3* host,LyraPluginV3* out){
- if(!host||host->size!=sizeof(*host)||host->abi!=LYRA_PLUGIN_ABI||!out)return -1;*out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id="official.ffmpeg";out->kind="playback";out->config_tables="audio_transition";out->version=LYRA_PLUGIN_VERSION;out->init=init;out->shutdown=shutdown;out->query_interface=query;return 0;
+ if(!host||host->size!=sizeof(*host)||host->abi!=LYRA_PLUGIN_ABI||!out)return -1;*out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id="official.ffmpeg";out->kind="playback";out->config_tables="audio_transition,system";out->version=LYRA_PLUGIN_VERSION;out->init=init;out->shutdown=shutdown;out->query_interface=query;return 0;
 }
