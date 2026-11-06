@@ -10,10 +10,10 @@ if [[ ! -f $prefix/lib/libavcodec.a ]]; then bash native/third_party/build_ffmpe
 version=$(python3 -c 'import json,tomllib; d=json.load(open("catalog.json")); m=tomllib.load(open("manifest.toml","rb")); assert d["version"]==m["version"]; print(d["version"])')
 mkdir -p "$root/dist/ffmpeg"
 rm -rf "$root/dist/ffmpeg/stems"
-"$compiler" "-DLYRA_PLUGIN_VERSION=\"$version\"" -std=c++17 -Oz -flto -shared -static-libstdc++ -fPIC -fno-exceptions -fno-rtti -fvisibility=hidden -ffunction-sections -fdata-sections -I native -I native/third_party/signalsmith/linear/include -I "$root/sdk/include" -I "$prefix/include" \
+"$compiler" "-DLYRA_PLUGIN_VERSION=\"$version\"" -std=c++17 -Oz -flto -shared -static-libstdc++ -fPIC -fno-exceptions -fno-rtti -fno-stack-protector -fvisibility=hidden -ffunction-sections -fdata-sections -I native -I native/third_party/signalsmith/linear/include -I "$root/sdk/include" -I "$prefix/include" \
  src/plugin.cpp native/playback/{engine,engine_provider,audio_features,progress_memory,transition_control}.cpp native/platform/android/{audio_output,log}.cpp \
  -Wl,--start-group "$prefix/lib/"{libavformat,libavcodec,libswresample,libavutil}.a -Wl,--end-group \
- -Wl,--gc-sections -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384 -laaudio -llog -lz -ldl -lm -o "$root/dist/ffmpeg/plugin.so"
+ -Wl,--icf=all -Wl,--gc-sections -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384 -laaudio -llog -lz -ldl -lm -o "$root/dist/ffmpeg/plugin.so"
 "$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded "$root/dist/ffmpeg/plugin.so"
 cp manifest.toml "$root/dist/ffmpeg/manifest.toml"
 cp icon.png README.md CHANGELOG.md "$root/dist/ffmpeg/"

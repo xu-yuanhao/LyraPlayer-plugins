@@ -1,6 +1,9 @@
 #include "playback/audio_features.h"
 #include <algorithm>
 #include <cmath>
+#if defined(__aarch64__) && !defined(LYRA_AUDIO_FEATURES_REFERENCE)
+#include <arm_neon.h>
+#endif
 static_assert(std::atomic<uint64_t>::is_always_lock_free, "audio summaries must be lock-free");
 
 void AudioFeatureHistory::LowPass::setup(double hz, double rate) {
@@ -44,18 +47,79 @@ void AudioFeatureHistory::feed(const int16_t *stereo, int frames, int64_t first_
         output_frame = first_frame;
     if (!stereo || window_ < 1)
         return;
+#if defined(__aarch64__) && !defined(LYRA_AUDIO_FEATURES_REFERENCE)
+    // reset() gives both channels identical coefficients. Process channels in
+    // independent double-precision lanes; retain scalar power-sum order and
+    // publication boundaries. The reference switch is for differential tests.
+    enum class Band { Energy, Bass, Mid, High };
+    auto pair = [](double left, double right) {
+      double values[]{left, right};
+      return vld1q_f64(values);
+    };
+    auto load = [&](LowPass *p, bool second) {
+      return pair(second ? p[0].z2 : p[0].z1, second ? p[1].z2 : p[1].z1);
+    };
+    auto save = [](LowPass *p, float64x2_t z1, float64x2_t z2) {
+      p[0].z1 = vgetq_lane_f64(z1, 0);
+      p[1].z1 = vgetq_lane_f64(z1, 1);
+      p[0].z2 = vgetq_lane_f64(z2, 0);
+      p[1].z2 = vgetq_lane_f64(z2, 1);
+    };
+    auto lb0 = vdupq_n_f64(low_[0].b0), lb1 = vdupq_n_f64(low_[0].b1),
+         lb2 = vdupq_n_f64(low_[0].b2);
+    auto la1 = vdupq_n_f64(low_[0].a1), la2 = vdupq_n_f64(low_[0].a2);
+    auto wb0 = vdupq_n_f64(wide_[0].b0), wb1 = vdupq_n_f64(wide_[0].b1),
+         wb2 = vdupq_n_f64(wide_[0].b2);
+    auto wa1 = vdupq_n_f64(wide_[0].a1), wa2 = vdupq_n_f64(wide_[0].a2);
+    auto lz1 = load(low_, false), lz2 = load(low_, true),
+         wz1 = load(wide_, false), wz2 = load(wide_, true);
     for (int i = 0; i < frames; ++i) {
-        // Sum channel powers independently: opposite-phase stereo must remain audible to the analyzer.
-        for (int c = 0; c < 2; ++c) {
-            double x = stereo[i * 2 + c] / 32768., l = low_[c].step(x), w = wide_[c].step(x), m = w - l, h = x - w;
-            sum_[0] += x * x;
-            sum_[1] += l * l;
-            sum_[2] += m * m;
-            sum_[3] += h * h;
-        }
-        if (++count_ == window_)
-            publish(first_frame + i + 1, output_frame + i + 1);
+      auto x = pair(stereo[i * 2] / -double(INT16_MIN),
+                    stereo[i * 2 + 1] / -double(INT16_MIN));
+      auto l = vaddq_f64(vmulq_f64(lb0, x), lz1),
+           w = vaddq_f64(vmulq_f64(wb0, x), wz1);
+      lz1 = vaddq_f64(vsubq_f64(vmulq_f64(lb1, x), vmulq_f64(la1, l)), lz2);
+      lz2 = vsubq_f64(vmulq_f64(lb2, x), vmulq_f64(la2, l));
+      wz1 = vaddq_f64(vsubq_f64(vmulq_f64(wb1, x), vmulq_f64(wa1, w)), wz2);
+      wz2 = vsubq_f64(vmulq_f64(wb2, x), vmulq_f64(wa2, w));
+      auto m = vsubq_f64(w, l), h = vsubq_f64(x, w);
+      auto power = [&](Band band, float64x2_t value) {
+        auto p = vmulq_f64(value, value);
+        sum_[int(band)] += vgetq_lane_f64(p, 0);
+        sum_[int(band)] += vgetq_lane_f64(p, 1);
+      };
+      power(Band::Energy, x);
+      power(Band::Bass, l);
+      power(Band::Mid, m);
+      power(Band::High, h);
+      if (++count_ == window_) {
+        save(low_, lz1, lz2);
+        save(wide_, wz1, wz2);
+        publish(first_frame + i + 1, output_frame + i + 1);
+        lz1 = load(low_, false);
+        lz2 = load(low_, true);
+        wz1 = load(wide_, false);
+        wz2 = load(wide_, true);
+      }
     }
+    save(low_, lz1, lz2);
+    save(wide_, wz1, wz2);
+#else
+    for (int i = 0; i < frames; ++i) {
+      // Sum channel powers independently: opposite-phase stereo must remain
+      // audible to the analyzer.
+      for (int c = 0; c < 2; ++c) {
+        double x = stereo[i * 2 + c] / 32768., l = low_[c].step(x),
+               w = wide_[c].step(x), m = w - l, h = x - w;
+        sum_[0] += x * x;
+        sum_[1] += l * l;
+        sum_[2] += m * m;
+        sum_[3] += h * h;
+      }
+      if (++count_ == window_)
+        publish(first_frame + i + 1, output_frame + i + 1);
+    }
+#endif
 }
 void AudioFeatureHistory::publish(int64_t frame, int64_t output_frame) {
     float rms[4];
