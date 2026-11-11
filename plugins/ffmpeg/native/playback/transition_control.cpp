@@ -2,6 +2,7 @@
 #include <cmath>
 #include <array>
 #include <cstring>
+#include <chrono>
 namespace {
 const LyraFieldRuleV3 rules[]={
  {LYRA_TRANSITION_ENABLED,LYRA_FIELD_I64},
@@ -9,12 +10,27 @@ const LyraFieldRuleV3 rules[]={
  {LYRA_TRANSITION_MANUAL_MS,LYRA_FIELD_F64}};
 bool valid(const LyraAudioTransitionV3 *api){return api && api->size==sizeof(*api) && api->version==LYRA_INTERFACE_VERSION && api->request;}
 }
-AudioTransitionControl::AudioTransitionControl(){settings_={true,7000.,4000.};api_={sizeof(api_),LYRA_INTERFACE_VERSION,this,request};}
+AudioTransitionControl::AudioTransitionControl(){api_={sizeof(api_),LYRA_INTERFACE_VERSION,this,request};}
 int AudioTransitionControl::request(void *user,const LyraMessageV3 *message,LyraReplyV3 *reply){
  if(!reply || reply->size!=sizeof(*reply))return LYRA_MESSAGE_INVALID;
  reply->field_count=0;reply->status=LYRA_MESSAGE_INVALID;
  if(!message || message->size!=sizeof(*message))return reply->status;
  auto &self=*static_cast<AudioTransitionControl*>(user);
+ if(message->operation==LYRA_TRANSITION_OUTPUT_GAIN){
+  const LyraFieldRuleV3 gain_rules[]={{LYRA_TRANSITION_OUTPUT_LEVEL,LYRA_FIELD_F64},{LYRA_TRANSITION_OUTPUT_RAMP_MS,LYRA_FIELD_F64}};
+  if(lyra_message_fields(message,gain_rules,std::size(gain_rules))<0)return reply->status;
+  double values[std::size(gain_rules)]{};bool seen[std::size(gain_rules)]{};
+  for(uint32_t i=0;i<message->field_count;++i){const auto &f=message->fields[i];
+   if(f.tag<LYRA_TRANSITION_OUTPUT_LEVEL || f.tag>LYRA_TRANSITION_OUTPUT_RAMP_MS)continue;
+   auto n=f.tag-LYRA_TRANSITION_OUTPUT_LEVEL;
+   if(seen[n] || !f.data || f.bytes!=sizeof(double))return reply->status;
+   seen[n]=true;memcpy(&values[n],f.data,sizeof(double));
+  }
+  for(bool present:seen)if(!present)return reply->status;
+  if(!std::isfinite(values[0]) || values[0]<0 || values[0]>1 || !std::isfinite(values[1]) || values[1]<0 || values[1]>std::chrono::duration<double,std::milli>(std::chrono::seconds(1)).count())return reply->status;
+  self.output_gain.set(float(values[0]),float(values[1]));
+  return reply->status=LYRA_MESSAGE_OK;
+ }
  if(message->operation==LYRA_TRANSITION_QUERY){
   if(lyra_message_fields(message,nullptr,0)<0)return reply->status;
   if(reply->capacity<2 || !reply->fields)return reply->status=LYRA_MESSAGE_CAPACITY;
@@ -61,4 +77,13 @@ double automatic_transition_ms(const LyraAudioTransitionV3 *api){
   if(f.tag==LYRA_TRANSITION_AUTOMATIC_MS && f.type==LYRA_FIELD_F64 && f.bytes==sizeof(ms))memcpy(&ms,f.data,sizeof(ms));
  }
  return enabled==1 && std::isfinite(ms) && ms>0 && ms<=8000?ms:0;
+}
+
+int set_output_gain(const LyraAudioTransitionV3 *api,double gain,double ramp_ms){
+ if(!valid(api))return LYRA_MESSAGE_UNSUPPORTED;
+ LyraFieldV3 fields[]={{LYRA_TRANSITION_OUTPUT_LEVEL,LYRA_FIELD_F64,LYRA_FIELD_REQUIRED,sizeof(gain),&gain},
+ {LYRA_TRANSITION_OUTPUT_RAMP_MS,LYRA_FIELD_F64,LYRA_FIELD_REQUIRED,sizeof(ramp_ms),&ramp_ms}};
+ LyraMessageV3 message{sizeof(message),uint32_t(std::size(fields)),LYRA_TRANSITION_OUTPUT_GAIN,fields};
+ LyraReplyV3 reply{sizeof(reply),0,0,0,nullptr};
+ int result=api->request(api->user,&message,&reply);return result?result:reply.status;
 }

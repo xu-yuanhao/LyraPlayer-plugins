@@ -24,6 +24,8 @@ static std::atomic<int> output_opens{0},mixed_frames{0};
 static std::atomic<bool> watch_mix{false},watch_pitch{false};
 static std::atomic<int> pitch_frames{0},pitch_crossings{0};
 static bool pitch_positive=false;
+static std::atomic<bool> watch_gain{false};
+static std::atomic<int> gain_peak{0};
 namespace lyra::audio {
 struct Stream { std::mutex mutex;State state=Open;int rate=48000;int64_t written=0,anchor=0,when=0,start_written=0; };
 static int64_t played(Stream* s){return s->state==Started?std::min(s->written,s->anchor+(ns()-s->when)*s->rate/1000000000):s->anchor;}
@@ -59,6 +61,7 @@ Result write(Stream* s,const void* bytes,int count,int64_t){
     }
     if(watch_mix){auto *pcm=static_cast<const int16_t*>(bytes);for(int i=0;i<n;++i)if(std::abs(int(pcm[i*2]))>100 && std::abs(int(pcm[i*2+1]))>100)++mixed_frames;}
     if(watch_pitch){auto *pcm=static_cast<const int16_t*>(bytes);for(int i=0;i<n;++i){bool positive=pcm[i*2]>=0;if(positive && !pitch_positive)++pitch_crossings;pitch_positive=positive;}pitch_frames+=n;}
+    if(watch_gain){auto *pcm=static_cast<const int16_t*>(bytes);int peak=gain_peak;for(int i=0;i<n*2;++i)peak=std::max(peak,std::abs(int(pcm[i])));gain_peak=peak;}
     s->written+=n;return n;
 }
 Result timestamp(Stream* s,int64_t* frame,int64_t* stamp){std::lock_guard<std::mutex> lock(s->mutex);if(s->state!=Started)return ErrorInvalidState;*frame=played(s);*stamp=ns();return Ok;}
@@ -195,5 +198,20 @@ int main(int argc,char **argv){
         }
         engine.stop();puts("Recovered FLAC engine startup, middle and tail seek passed");
     }
+    check(configure_transition(engine.transition_interface(),{false,7000,4000})==0,"disable blend for duck test");
+    engine.start(dup(fd),101,20000,features,101);
+    check(until([&]{return engine.snapshot().position_us>200000;}),"duck test playing");
+    auto before=engine.snapshot();
+    check(set_output_gain(engine.transition_interface(),.2,120)==0,"provider accepts notification duck");
+    check(until([&]{return engine.snapshot().position_us>before.position_us+300000;}),"duck ramp never pauses media clock");
+    gain_peak=0;watch_gain=true;before=engine.snapshot();
+    check(until([&]{return engine.snapshot().position_us>before.position_us+500000;}),"ducked playback continues");
+    watch_gain=false;check(gain_peak>500 && gain_peak<=3001,"actual PCM attenuated to notification level");
+    check(set_output_gain(engine.transition_interface(),1,120)==0,"provider accepts focus restore");
+    before=engine.snapshot();check(until([&]{return engine.snapshot().position_us>before.position_us+300000;}),"gain ramp continues playback");
+    gain_peak=0;watch_gain=true;before=engine.snapshot();
+    check(until([&]{return engine.snapshot().position_us>before.position_us+500000;}),"restored playback continues");
+    watch_gain=false;check(gain_peak>6000,"PCM returns to normal gain");engine.stop();
+    puts("Notification duck and restore preserve playing state and clock; PCM levels verified");
     ::close(fd);std::puts("Android decoder / PCM clock / rapid lyric and progress seeks passed");
 }

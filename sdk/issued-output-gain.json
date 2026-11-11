@@ -1,0 +1,44 @@
+{
+  "interface": {
+    "name": "LYRA_INTERFACE_AUDIO_TRANSITION",
+    "id": 23,
+    "transport": "message",
+    "type": "LyraAudioTransitionV3"
+  },
+  "shape": [
+    "{",
+    "uint32_t",
+    "size",
+    ",",
+    "version",
+    ";",
+    "void",
+    "*",
+    "user",
+    ";",
+    "int",
+    "(",
+    "*",
+    "request",
+    ")",
+    "(",
+    "void",
+    "*",
+    ",",
+    "const",
+    "LyraMessageV3",
+    "*",
+    ",",
+    "LyraReplyV3",
+    "*",
+    ")",
+    ";",
+    "}"
+  ],
+  "definitions": {
+    "LYRA_TRANSITION_OUTPUT_GAIN": "10",
+    "LYRA_TRANSITION_OUTPUT_LEVEL": "400",
+    "LYRA_TRANSITION_OUTPUT_RAMP_MS": "401"
+  },
+  "header": "native/plugin/transition_contracts.h"
+}

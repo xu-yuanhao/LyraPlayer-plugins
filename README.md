@@ -53,3 +53,5 @@ FFmpeg 1.4.5 使用未修改的 FFmpeg 上游实现，精简限于组件配置�
 ## 1.4.6 双版本
 
 `official.ffmpeg` 保留原 20 个解码器及常见封装的精简版；`official.ffmpeg-full` 为 200 个内置音频解码器的完整版。共享 `plugins/ffmpeg` 的引擎实现，不复制播放状态或私有宿主接口。运行 `bash plugins/ffmpeg/build.sh` 或 `bash plugins/ffmpeg-full/build.sh` 分别构建。两版均有 FLAC 首帧恢复修复。只读流按帧 CRC8/CRC16 校验跳过有效音频前的额外数据，不改写用户文件。
+
+1.4.7 两版均实现宿主已登记的可选输出音量消息（operation 10，level/ramp tags 400/401；见 sdk/issued-output-gain.json），不变更 ABI 3 结构或接口 ID。通知压低音量期间不暂停、不重建音频流，恢复焦点后平滑还原。

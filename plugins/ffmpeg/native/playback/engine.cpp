@@ -832,7 +832,13 @@ void Engine::feed(const int16_t *src, int count, int64_t frame_us, double speed)
         } else if (chunk > 4096) {
             chunk = 4096;
         }
+        bool attenuated=transition_control_.output_gain.begin(rate_.load(std::memory_order_relaxed));
+        if(attenuated){
+            chunk=std::min(chunk,int(std::size(faded)/OutputGain::channels));
+            transition_control_.output_gain.apply(ptr,faded,chunk);ptr=faded;
+        }
         int32_t wrote = lyra::audio::write(stream, ptr, chunk, 20000000LL);
+        if(wrote>0 && attenuated)transition_control_.output_gain.consume(wrote);
         if (wrote == 0) {
             refresh_clock(stream);
             continue;
