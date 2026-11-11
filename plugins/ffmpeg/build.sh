@@ -6,7 +6,8 @@ sdk=${ANDROID_HOME:-$HOME/Android/Sdk}
 ndk=$sdk/ndk/28.2.13676358
 compiler=$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++
 prefix=${LYRA_FFMPEG_PREFIX:-$PWD/native/third_party/ffmpeg/out}
-if [[ ! -f $prefix/lib/libavcodec.a ]]; then bash native/third_party/build_ffmpeg.sh; fi
+if [[ -z ${LYRA_FFMPEG_PREFIX:-} ]]; then bash native/third_party/build_ffmpeg.sh; fi
+[[ -s "$prefix/audio-decoders.txt" ]] || { echo "FFmpeg prefix lacks verified complete audio registry" >&2; exit 1; }
 version=$(python3 -c 'import json,tomllib; d=json.load(open("catalog.json")); m=tomllib.load(open("manifest.toml","rb")); assert d["version"]==m["version"]; print(d["version"])')
 mkdir -p "$root/dist/ffmpeg"
 rm -rf "$root/dist/ffmpeg/stems"
@@ -16,6 +17,7 @@ rm -rf "$root/dist/ffmpeg/stems"
  -Wl,--icf=all -Wl,--gc-sections -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384 -laaudio -llog -lz -ldl -lm -o "$root/dist/ffmpeg/plugin.so"
 "$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded "$root/dist/ffmpeg/plugin.so"
 cp manifest.toml "$root/dist/ffmpeg/manifest.toml"
+cp "$prefix/audio-decoders.txt" "$root/dist/ffmpeg/audio-decoders.txt"
 cp icon.png README.md CHANGELOG.md "$root/dist/ffmpeg/"
 cp catalog.json "$root/dist/ffmpeg/metadata.json"
 mkdir -p "$root/dist/ffmpeg/licenses"
@@ -29,6 +31,6 @@ root=Path(sys.argv[1]);import json
 version=json.loads((root/'plugins/ffmpeg/catalog.json').read_text())['version']
 out=root/f'dist/official.ffmpeg-{version}-android-arm64-v8a.zip'
 with ZipFile(out,'w',ZIP_DEFLATED,compresslevel=9) as z:
- for n in ['manifest.toml','plugin.so','LICENSE.txt','metadata.json','icon.png','README.md','CHANGELOG.md','licenses/LICENSE.stretch.txt','licenses/LICENSE.linear.txt']:z.write(root/'dist/ffmpeg'/n,n)
+ for n in ['manifest.toml','plugin.so','LICENSE.txt','metadata.json','icon.png','README.md','CHANGELOG.md','licenses/LICENSE.stretch.txt','licenses/LICENSE.linear.txt','audio-decoders.txt']:z.write(root/'dist/ffmpeg'/n,n)
 print(out)
 PY

@@ -1079,6 +1079,10 @@ void Engine::decode_main() {
                     if(transition_pending_.load()){
                         {timespec delay{0,1000000};nanosleep(&delay,nullptr);}continue;
                     }
+                    if(source->delivered_frames==0){
+                        lyra_log(LyraLogError,"Lyra","FFmpeg reached EOF without decoded audio samples");
+                        ok=false;break;
+                    }
                     if(started_.load())wait_for_drain();
                     if(seek_ms_.load()>=0 || transition_pending_.load())continue;
                     {std::lock_guard<std::mutex> lock(handoff_mu_);if(transition_pending_.load())continue;accepting_transition_=false;}

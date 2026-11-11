@@ -7,7 +7,8 @@
 - MP3、FLAC、AAC、AAC LATM、ALAC
 - Vorbis、Opus、APE、WavPack
 - AC-3、E-AC-3（Dolby Digital / Dolby Digital Plus，含 Atmos 音轨），多声道下混为立体声
-- WAV 与现有 PCM 格式
+- 完整 PCM/DPCM/ADPCM、WMA、MP1/MP2、DTS、TrueHD/MLP、DSD 等 FFmpeg 内置音频解码器（共 200 个）
+- 完整启用输入封装及解析器；包内 `audio-decoders.txt` 列出本次构建注册表
 
 ## 使用方式
 
