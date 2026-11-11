@@ -5,9 +5,9 @@
       "arch": "arm64-v8a",
       "author": "Xu YuanHao / FFmpeg contributors",
       "author_url": "https://github.com/xu-yuanhao",
-      "bytes": 774989,
+      "bytes": 775739,
       "capability": "playback",
-      "changelog": "## 1.4.6\n- 插件市场提供精简版和音频完整版，保留原轻量格式范围，并可选完整 200 个内置音频解码器。\n- 修复 FLAC 元数据后存在较长无效前缀时找不到首个有效音频帧的问题；通过 CRC8/CRC16 校验恢复，不依赖歌名、固定偏移，也不改写文件。\n- 恢复起点后的跳转维持逻辑文件位置与媒体时钟一致；二进制定位失败时使用可取消的解码前进路径。\n\n## 1.4.5\n- 从少量格式白名单改为完整保留 FFmpeg 7.1.1 自带的 200 个音频解码器，以及封装读取和解析能力；仍移除视频解码、编码器、输出封装和网络功能。\n- 撤回修改 FFmpeg 内部 DSP/格式实现的精简补丁，仅用组件配置、编译及链接优化精简。\n- 构建时校验音频注册表与实际配置，避免复用缺少解码器的旧缓存。\n- 无法输出任何音频样本的文件报告失败，避免仅凭可读标签误判正常播放结束。不修改或猜测修复原文件。\n\n## 1.4.4\n- 使用 ARM64 NEON 加速背景可视化所需的音频分析，减少这部分计算开销；保持现有分析精度和节奏。\n\n## 1.4.3\n- 遵循播放器设置中的“熄屏节流”开关，默认关闭；关闭时不因亮灭屏重建音频流。\n- 缺少该设置的旧版播放器默认关闭节流。开启后保留大缓冲省电策略，切换亮灭屏可能短暂停顿。\n\n## 1.4.2\n- 锁屏 / 息屏播放时自动改用更大的音频缓冲，减少 CPU 唤醒、更省电；亮屏自动恢复小缓冲，保持低延迟、操作跟手。\n\n## 1.4.1\n- Track changes now use a plain linear crossfade; the adaptive analysis, tempo\n  matching, stem handoff and the transition-stems dependency are removed.\n- No analysis caches are written anymore.\n\n# 1.4.0\n\n- 增加 AC-3 与 E-AC-3（Dolby Digital / Dolby Digital Plus、含 Atmos 音轨）解码，之前这类 m4a 只能退回系统解码器。\n- 配套启用 ac3 解析器；多声道按现有立体声下混输出，其余格式与播放路径不变。\n\n# 1.3.0\n\n- 将 Stem 模型拆为可选的 official.transition-stems 插件；本包不含模型。\n- 包含 1.3.0-dev.5 的坏帧恢复、FLAC 识别和过渡修复。\n- 修正下载描述，确保版本、包名及下载文件一致。\n\n# 1.3.0-dev.5\n\n- Recover after invalid encoded packets instead of ending a playable track at the first damaged frame.\n\n# 1.3.0-dev.4\n\n- Recognize FLAC after a large leading ID3 tag from fixed-size headers and select the FLAC demuxer while retaining metadata.\n\n# 1.3.0-dev.3\n\n- Introduce incoming accompaniment immediately instead of suppressing midrange and gating bass until mid-transition. Retain separate vocal handoff and peak protection.\n\n# 1.3.0-dev.2（过渡硬切修复）\n\n- 修复人声退出点为零时，旧歌人声第一帧被截断。\n- 两段人声包络始终完整落在最终过渡时长内，覆盖短过渡与乐句调整。\n- 只在两侧都有对齐且完整覆盖的分轨时启用 Stem；缓存缺失或速度不匹配时保留完整自适应过渡。\n- 增加真实混音器的五种边界场景与首尾音频样本回归。\n\n# 1.3.0-dev.1（本地分轨试用版）\n\n- 后台流式整曲结构与真实人声分析，持久化小索引和有界分轨 PCM 缓存。\n- 打包独立 Spleeter/ncnn 依赖，实际分离人声与伴奏，交接时分别控制包络。\n- 未准备好的曲目沿用自适应过渡；不把推理放进音频输出路径。\n- 保留混合采样率切换后 seek 的输出时钟及速度重置修复。\n\n# 1.2.0-dev.3（本地试听版）\n\n- 通过可选消息扩展接入有界首尾静音分析，保留弱音/混响余量。\n- 首曲与过渡目标跳过确认的片头静音，自动交接参考有效音乐结尾。\n- 保留原曲进度、歌词坐标与显式 seek；短全静音曲不跳成空曲。\n- 同一解码器扫描并重置，不增加第三个解码器。\n\n# 1.2.0-dev.2（本地试听版）\n\n- 修复 AAudio 重复跳转后时间戳落后，导致进度停住、自动和手动过渡失效。\n- 跳转时重建输出流以清除帧计数偏移；连续切歌仍复用同一个输出流。\n- 增加真实 AAudio 连续 60 轮跳转与切歌静音回归。\n\n# 1.2.0-dev.1（本地试听版）\n\n- 通过接口 23 接入自动、手动切歌的节拍匹配和频段交接。\n- 复用单个 AAudio 输出，映射变速后的源时间，支持准备中 seek、连续切歌和安全卸载。\n- 不变更现有解码器列表。\n\n# 1.1.1\n\n- seek 请求立即暂停旧输出，等待定位期间冻结音频时钟，避免歌词和进度提前跳转。\n- 曲尾使用统一播放时钟判断最后一个音频帧是否已呈现，避免等待下一次硬件时间戳。\n- 解码格式和 ABI 3 保持不变。\n\n# 1.1.0\n\n采用当前 ABI 3 插件契约；仅支持当前内测宿主，不提供旧 ABI 适配。解码格式保持不变。\n\n# 1.0.1\n\n- 新增作者、官方 FFmpeg 图标、离线 Markdown 说明与更新记录。\n- 解码器及播放实现保持一致。\n",
+      "changelog": "## 1.4.7\n- 修复安装 FFmpeg 后通知将音乐暂停的问题：支持宿主已公布的输出音量渐变消息，通知期间压低 PCM 音量并继续播放，焦点恢复后平滑还原。\n- 精简版与音频完整版同步修复，保留 1.4.6 的 FLAC 兼容修复及格式范围。通话和耳机断开等暂停规则由宿主保持不变。\n\n## 1.4.6\n- 插件市场提供精简版和音频完整版，保留原轻量格式范围，并可选完整 200 个内置音频解码器。\n- 修复 FLAC 元数据后存在较长无效前缀时找不到首个有效音频帧的问题；通过 CRC8/CRC16 校验恢复，不依赖歌名、固定偏移，也不改写文件。\n- 恢复起点后的跳转维持逻辑文件位置与媒体时钟一致；二进制定位失败时使用可取消的解码前进路径。\n\n## 1.4.5\n- 从少量格式白名单改为完整保留 FFmpeg 7.1.1 自带的 200 个音频解码器，以及封装读取和解析能力；仍移除视频解码、编码器、输出封装和网络功能。\n- 撤回修改 FFmpeg 内部 DSP/格式实现的精简补丁，仅用组件配置、编译及链接优化精简。\n- 构建时校验音频注册表与实际配置，避免复用缺少解码器的旧缓存。\n- 无法输出任何音频样本的文件报告失败，避免仅凭可读标签误判正常播放结束。不修改或猜测修复原文件。\n\n## 1.4.4\n- 使用 ARM64 NEON 加速背景可视化所需的音频分析，减少这部分计算开销；保持现有分析精度和节奏。\n\n## 1.4.3\n- 遵循播放器设置中的“熄屏节流”开关，默认关闭；关闭时不因亮灭屏重建音频流。\n- 缺少该设置的旧版播放器默认关闭节流。开启后保留大缓冲省电策略，切换亮灭屏可能短暂停顿。\n\n## 1.4.2\n- 锁屏 / 息屏播放时自动改用更大的音频缓冲，减少 CPU 唤醒、更省电；亮屏自动恢复小缓冲，保持低延迟、操作跟手。\n\n## 1.4.1\n- Track changes now use a plain linear crossfade; the adaptive analysis, tempo\n  matching, stem handoff and the transition-stems dependency are removed.\n- No analysis caches are written anymore.\n\n# 1.4.0\n\n- 增加 AC-3 与 E-AC-3（Dolby Digital / Dolby Digital Plus、含 Atmos 音轨）解码，之前这类 m4a 只能退回系统解码器。\n- 配套启用 ac3 解析器；多声道按现有立体声下混输出，其余格式与播放路径不变。\n\n# 1.3.0\n\n- 将 Stem 模型拆为可选的 official.transition-stems 插件；本包不含模型。\n- 包含 1.3.0-dev.5 的坏帧恢复、FLAC 识别和过渡修复。\n- 修正下载描述，确保版本、包名及下载文件一致。\n\n# 1.3.0-dev.5\n\n- Recover after invalid encoded packets instead of ending a playable track at the first damaged frame.\n\n# 1.3.0-dev.4\n\n- Recognize FLAC after a large leading ID3 tag from fixed-size headers and select the FLAC demuxer while retaining metadata.\n\n# 1.3.0-dev.3\n\n- Introduce incoming accompaniment immediately instead of suppressing midrange and gating bass until mid-transition. Retain separate vocal handoff and peak protection.\n\n# 1.3.0-dev.2（过渡硬切修复）\n\n- 修复人声退出点为零时，旧歌人声第一帧被截断。\n- 两段人声包络始终完整落在最终过渡时长内，覆盖短过渡与乐句调整。\n- 只在两侧都有对齐且完整覆盖的分轨时启用 Stem；缓存缺失或速度不匹配时保留完整自适应过渡。\n- 增加真实混音器的五种边界场景与首尾音频样本回归。\n\n# 1.3.0-dev.1（本地分轨试用版）\n\n- 后台流式整曲结构与真实人声分析，持久化小索引和有界分轨 PCM 缓存。\n- 打包独立 Spleeter/ncnn 依赖，实际分离人声与伴奏，交接时分别控制包络。\n- 未准备好的曲目沿用自适应过渡；不把推理放进音频输出路径。\n- 保留混合采样率切换后 seek 的输出时钟及速度重置修复。\n\n# 1.2.0-dev.3（本地试听版）\n\n- 通过可选消息扩展接入有界首尾静音分析，保留弱音/混响余量。\n- 首曲与过渡目标跳过确认的片头静音，自动交接参考有效音乐结尾。\n- 保留原曲进度、歌词坐标与显式 seek；短全静音曲不跳成空曲。\n- 同一解码器扫描并重置，不增加第三个解码器。\n\n# 1.2.0-dev.2（本地试听版）\n\n- 修复 AAudio 重复跳转后时间戳落后，导致进度停住、自动和手动过渡失效。\n- 跳转时重建输出流以清除帧计数偏移；连续切歌仍复用同一个输出流。\n- 增加真实 AAudio 连续 60 轮跳转与切歌静音回归。\n\n# 1.2.0-dev.1（本地试听版）\n\n- 通过接口 23 接入自动、手动切歌的节拍匹配和频段交接。\n- 复用单个 AAudio 输出，映射变速后的源时间，支持准备中 seek、连续切歌和安全卸载。\n- 不变更现有解码器列表。\n\n# 1.1.1\n\n- seek 请求立即暂停旧输出，等待定位期间冻结音频时钟，避免歌词和进度提前跳转。\n- 曲尾使用统一播放时钟判断最后一个音频帧是否已呈现，避免等待下一次硬件时间戳。\n- 解码格式和 ABI 3 保持不变。\n\n# 1.1.0\n\n采用当前 ABI 3 插件契约；仅支持当前内测宿主，不提供旧 ABI 适配。解码格式保持不变。\n\n# 1.0.1\n\n- 新增作者、官方 FFmpeg 图标、离线 Markdown 说明与更新记录。\n- 解码器及播放实现保持一致。\n",
       "config": "",
       "description": "常见音频格式的轻量解码引擎。",
       "entry": "plugin.so",
@@ -17,23 +17,23 @@
       "license": "LGPL-2.1-or-later",
       "platform": "android",
       "readme": "# FFmpeg 播放引擎（精简版）\n\n常见音频格式的轻量解码引擎。\n\n两个版本共享播放和文件兼容修复，请选择其中一个启用。精简版保留原有 MP3、FLAC、AAC、ALAC、Vorbis、Opus、APE、WavPack、AC-3/E-AC-3 及常见 PCM 范围；音频完整版扩展到 FFmpeg 7.1.1 内置 200 个音频解码器及全部输入封装/解析器，均不含视频解码和模型。\n\n1.4.6 修复有效 FLAC 音频前夹杂大量额外数据时无法播放：按头部 CRC8 和完整音频帧 CRC16 校验恢复起点，只调整只读流映射，不修改原文件。两版不互相依赖，通过相同公开播放服务接管播放。\n\nFFmpeg: LGPL-2.1-or-later。源码及构建脚本位于本仓库 plugins/ffmpeg。\n",
-      "sha256": "757bc5ded7d8d4c1847748f409f27678d32b0b8c63323895073e4d737e53eea3",
+      "sha256": "482a759265e3319df030935e3480987d71cf50e1ab228a85ec62319d749bf4f1",
       "tags": "ffmpeg 插件 plugin decoder 解码器 引擎 播放 ape wavpack alac flac mp3 aac vorbis opus ac3 eac3 eac3-joc atmos 杜比 无损",
       "title": "FFmpeg 播放引擎（精简版）",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.4.6/official.ffmpeg-1.4.6-android-arm64-v8a.zip",
-        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg/1.4.6/official.ffmpeg-1.4.6-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.4.7/official.ffmpeg-1.4.7-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg/1.4.7/official.ffmpeg-1.4.7-android-arm64-v8a.zip"
       ],
-      "version": "1.4.6"
+      "version": "1.4.7"
     },
     {
       "abi": 3,
       "arch": "arm64-v8a",
       "author": "Xu YuanHao / FFmpeg contributors",
       "author_url": "https://github.com/xu-yuanhao",
-      "bytes": 2634261,
+      "bytes": 2634929,
       "capability": "playback",
-      "changelog": "## 1.4.6\n- 插件市场提供精简版和音频完整版，保留原轻量格式范围，并可选完整 200 个内置音频解码器。\n- 修复 FLAC 元数据后存在较长无效前缀时找不到首个有效音频帧的问题；通过 CRC8/CRC16 校验恢复，不依赖歌名、固定偏移，也不改写文件。\n- 恢复起点后的跳转维持逻辑文件位置与媒体时钟一致；二进制定位失败时使用可取消的解码前进路径。\n\n",
+      "changelog": "## 1.4.7\n- 修复安装 FFmpeg 后通知将音乐暂停的问题：支持宿主已公布的输出音量渐变消息，通知期间压低 PCM 音量并继续播放，焦点恢复后平滑还原。\n- 精简版与音频完整版同步修复，保留 1.4.6 的 FLAC 兼容修复及格式范围。通话和耳机断开等暂停规则由宿主保持不变。\n\n## 1.4.6\n- 插件市场提供精简版和音频完整版，保留原轻量格式范围，并可选完整 200 个内置音频解码器。\n- 修复 FLAC 元数据后存在较长无效前缀时找不到首个有效音频帧的问题；通过 CRC8/CRC16 校验恢复，不依赖歌名、固定偏移，也不改写文件。\n- 恢复起点后的跳转维持逻辑文件位置与媒体时钟一致；二进制定位失败时使用可取消的解码前进路径。\n\n",
       "config": "",
       "description": "完整保留 FFmpeg 内置 200 个音频解码器，适合小众音频格式。",
       "entry": "plugin.so",
@@ -43,14 +43,14 @@
       "license": "LGPL-2.1-or-later",
       "platform": "android",
       "readme": "# FFmpeg 播放引擎（音频完整版）\n\n完整保留 FFmpeg 内置 200 个音频解码器，适合小众音频格式。\n\n两个版本共享播放和文件兼容修复，请选择其中一个启用。精简版保留原有 MP3、FLAC、AAC、ALAC、Vorbis、Opus、APE、WavPack、AC-3/E-AC-3 及常见 PCM 范围；音频完整版扩展到 FFmpeg 7.1.1 内置 200 个音频解码器及全部输入封装/解析器，均不含视频解码和模型。\n\n1.4.6 修复有效 FLAC 音频前夹杂大量额外数据时无法播放：按头部 CRC8 和完整音频帧 CRC16 校验恢复起点，只调整只读流映射，不修改原文件。两版不互相依赖，通过相同公开播放服务接管播放。\n\nFFmpeg: LGPL-2.1-or-later。源码及构建脚本位于本仓库 plugins/ffmpeg。\n",
-      "sha256": "9c1e0227e71efa0bfe925e41bc8c3b3127b4ded57a26b13dc343cbb22543f9e2",
+      "sha256": "c45296f6c601a1ed59bbd8aa8be7769216f6e277eae358bf11f9d29319fb2923",
       "tags": "ffmpeg 插件 plugin decoder 解码器 引擎 播放 ape wavpack alac flac mp3 aac vorbis opus ac3 eac3 eac3-joc atmos 杜比 无损",
       "title": "FFmpeg 播放引擎（音频完整版）",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-full-v1.4.6/official.ffmpeg-full-1.4.6-android-arm64-v8a.zip",
-        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg-full/1.4.6/official.ffmpeg-full-1.4.6-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-full-v1.4.7/official.ffmpeg-full-1.4.7-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg-full/1.4.7/official.ffmpeg-full-1.4.7-android-arm64-v8a.zip"
       ],
-      "version": "1.4.6"
+      "version": "1.4.7"
     },
     {
       "abi": 3,
