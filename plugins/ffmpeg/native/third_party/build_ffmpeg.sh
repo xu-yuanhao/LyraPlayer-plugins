@@ -15,10 +15,13 @@ SYSROOT="$TOOLCHAIN/sysroot"
 WORK="$ROOT/native/third_party/ffmpeg"
 SRC="$WORK/src"
 BUILD="$WORK/build"
+PROFILE=${LYRA_FFMPEG_PROFILE:-full}
+[[ $PROFILE == full || $PROFILE == lite ]] || exit 1
 PREFIX="$WORK/out"
+if [[ $PROFILE == lite ]]; then PREFIX="$WORK/out-lite"; BUILD="$WORK/build-lite"; fi
 TARBALL="$WORK/ffmpeg-7.1.1.tar.xz"
 STAMP="$PREFIX/stamp"
-KEY="ffmpeg-7.1.1 all-native-audio v3 unmodified-dsp all-demuxers all-parsers"
+KEY="ffmpeg-7.1.1 $PROFILE audio-v4 unmodified-dsp"
 
 if [[ ! -x "$CC" ]]; then
   echo "ndk clang missing: $CC" >&2
@@ -71,6 +74,14 @@ print(','.join(names))
 PYCODE
 )
 
+DEMUXERS="--enable-demuxers"
+PARSERS="--enable-parsers"
+if [[ $PROFILE == lite ]]; then
+  AUDIO_DECODERS="mp3,flac,aac,aac_latm,alac,vorbis,opus,ape,wavpack,ac3,eac3,pcm_s16le,pcm_s16be,pcm_s24le,pcm_s24be,pcm_s32le,pcm_s32be,pcm_f32le,pcm_f32be,pcm_u8"
+  DEMUXERS="--enable-demuxer=mp3,flac,wav,aiff,aac,mov,ogg,matroska,ape,wv"
+  PARSERS="--enable-parser=mpegaudio,aac,aac_latm,flac,vorbis,opus,ape,ac3"
+fi
+
 cd "$BUILD"
 
 if ! "$SRC/configure" \
@@ -110,9 +121,9 @@ if ! "$SRC/configure" \
   --enable-small \
   --enable-swresample \
   --enable-zlib \
-  --enable-demuxers \
+  "$DEMUXERS" \
   --enable-decoder="$AUDIO_DECODERS" \
-  --enable-parsers
+  "$PARSERS"
 then
   echo "---- config.log tail ----" >&2
   tail -n 80 ffbuild/config.log >&2 || true

@@ -1,0 +1,13 @@
+id = "official.ffmpeg-full"
+version = "1.4.6"
+abi = 3
+type = "playback"
+entry = "plugin.so"
+title = "FFmpeg 播放引擎（音频完整版）"
+author = "Xu YuanHao / FFmpeg contributors"
+author_url = "https://github.com/xu-yuanhao"
+homepage = "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/ffmpeg-full"
+license = "LGPL-2.1-or-later"
+icon = "icon.png"
+readme = "README.md"
+changelog = "CHANGELOG.md"

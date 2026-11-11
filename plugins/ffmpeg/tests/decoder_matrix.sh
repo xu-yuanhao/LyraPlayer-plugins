@@ -4,7 +4,7 @@ cd "$(dirname "$0")/../../.."
 serial=${1:-c2208dff}
 ndk=${ANDROID_HOME:-$HOME/Android/Sdk}/ndk/28.2.13676358
 cxx=$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++
-prefix=$PWD/plugins/ffmpeg/native/third_party/ffmpeg/out
+prefix=${LYRA_FFMPEG_PREFIX:-$PWD/plugins/ffmpeg/native/third_party/ffmpeg/out}
 mkdir -p dist/tests
 flags=(-std=c++17 -O2 -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -static-libstdc++ -I plugins/ffmpeg/native -I sdk/include -I plugins/ffmpeg/native/third_party/signalsmith/linear/include -I "$prefix/include")
 libs=(-Wl,--gc-sections -Wl,--start-group "$prefix/lib/"{libavformat,libavcodec,libswresample,libavutil}.a -Wl,--end-group -lz -lm -llog -laaudio)
@@ -17,6 +17,10 @@ adb -s "$serial" push dist/tests/decode-file dist/tests/decoder-coverage "$prefi
 adb -s "$serial" shell "$remote/decoder-coverage $remote/audio-decoders.txt"
 formats=(flac mp3 m4a alac.m4a ogg opus wv ac3 eac3 s24.wav f32.wav u8.wav aiff au caf wma mp2 adpcm.wav truehd mka)
 codecs=(flac libmp3lame aac alac libvorbis libopus wavpack ac3 eac3 pcm_s24le pcm_f32le pcm_u8 pcm_s16be pcm_mulaw pcm_s32le wmav2 mp2 adpcm_ima_wav truehd flac)
+if [[ ${LYRA_FFMPEG_PROFILE:-full} == lite ]]; then
+ formats=(flac mp3 m4a alac.m4a ogg opus wv ac3.mp4 eac3.mp4 s24.wav f32.wav u8.wav aiff)
+ codecs=(flac libmp3lame aac alac libvorbis libopus wavpack ac3 eac3 pcm_s24le pcm_f32le pcm_u8 pcm_s16be)
+fi
 for i in "${!formats[@]}";do
     file="dist/tests/matrix.${formats[$i]}"
     extra=(); if [[ ${codecs[$i]} == truehd ]]; then extra=(-f truehd); fi

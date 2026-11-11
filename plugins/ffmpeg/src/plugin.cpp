@@ -10,6 +10,9 @@
 #ifndef LYRA_PLUGIN_VERSION
 #error "Build must provide the catalog plugin version"
 #endif
+#ifndef LYRA_PLUGIN_ID
+#define LYRA_PLUGIN_ID "official.ffmpeg"
+#endif
 #include <jni.h>
 // The host hands us its JavaVM and a Context so we can answer "is the screen
 // interactive?" ourselves; the playback engine polls this once a second to size
@@ -95,5 +98,5 @@ static int init(const LyraHostV3 *host){backend=make_engine_backend();platform_h
 static void shutdown(const LyraHostV3*){if(backend.destroy)backend.destroy(backend.api.user);backend={};platform_host=nullptr;native_command=nullptr;native_transition=nullptr;transition_api={};screen_throttle=false;}
 static const void* query(const LyraHostV3*,uint32_t id,uint32_t version,uint32_t size){if(id==LYRA_INTERFACE_AUDIO_TRANSITION&&version==LYRA_INTERFACE_VERSION&&size==sizeof(LyraAudioTransitionV3))return native_transition?&transition_api:nullptr;return id==LYRA_INTERFACE_PLAYBACK_PROVIDER&&version==LYRA_INTERFACE_VERSION&&size==sizeof(backend.api)?&backend.api:nullptr;}
 extern "C" __attribute__((visibility("default"))) int lyra_plugin_init(const LyraHostV3* host,LyraPluginV3* out){
- if(!host||host->size!=sizeof(*host)||host->abi!=LYRA_PLUGIN_ABI||!out)return -1;*out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id="official.ffmpeg";out->kind="playback";out->config_tables="audio_transition,system";out->version=LYRA_PLUGIN_VERSION;out->init=init;out->shutdown=shutdown;out->query_interface=query;return 0;
+ if(!host||host->size!=sizeof(*host)||host->abi!=LYRA_PLUGIN_ABI||!out)return -1;*out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id=LYRA_PLUGIN_ID;out->kind="playback";out->config_tables="audio_transition,system";out->version=LYRA_PLUGIN_VERSION;out->init=init;out->shutdown=shutdown;out->query_interface=query;return 0;
 }

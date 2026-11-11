@@ -1,9 +1,9 @@
 id = "official.ffmpeg"
-version = "1.4.5"
+version = "1.4.6"
 abi = 3
 type = "playback"
 entry = "plugin.so"
-title = "FFmpeg 播放引擎"
+title = "FFmpeg 播放引擎（精简版）"
 author = "Xu YuanHao / FFmpeg contributors"
 author_url = "https://github.com/xu-yuanhao"
 homepage = "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/ffmpeg"

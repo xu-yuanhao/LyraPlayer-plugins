@@ -3,6 +3,7 @@
 #include "playback/engine.h"
 #include "playback/media_metadata.h"
 #include "playback/container_probe.h"
+#include "playback/flac_gap.h"
 #include <condition_variable>
 #include <memory>
 #include <algorithm>
@@ -106,6 +107,7 @@ struct SystemDecode {
     AVIOContext *avio=nullptr;AVFormatContext *fmt=nullptr;AVCodecContext *ctx=nullptr;
     AVPacket *pkt=nullptr;AVFrame *frame=nullptr;SwrContext *swr=nullptr;
     int swr_rate=0,swr_format=-1,swr_output=0;AVChannelLayout swr_layout{};
+    lyra::audio::FlacGap leading_gap;
     size_t stereo_pos=0,prepared_pos=0;std::vector<int16_t> prepared,stereo;
     ~SystemDecode(){
         if(ctx)avcodec_free_context(&ctx);if(frame)av_frame_free(&frame);if(pkt)av_packet_free(&pkt);
@@ -114,16 +116,22 @@ struct SystemDecode {
     }
     static int read_io(void *opaque,uint8_t *bytes,int count){
         auto &s=*static_cast<SystemDecode*>(opaque);
-        for(;;){ssize_t n=pread(s.fd,bytes,size_t(count),s.io_position);if(n>0){s.io_position+=n;return int(n);}if(!n)return AVERROR_EOF;if(errno!=EINTR)return AVERROR(errno);}
+        if(s.leading_gap.bytes && s.io_position<s.leading_gap.at)count=int(std::min(int64_t(count),s.leading_gap.at-s.io_position));
+        int64_t physical=s.io_position+(s.leading_gap.bytes && s.io_position>=s.leading_gap.at?s.leading_gap.bytes:0);
+        for(;;){ssize_t n=pread(s.fd,bytes,size_t(count),physical);if(n>0){s.io_position+=n;return int(n);}if(!n)return AVERROR_EOF;if(errno!=EINTR)return AVERROR(errno);}
     }
     static int64_t seek_io(void *opaque,int64_t offset,int whence){
         auto &s=*static_cast<SystemDecode*>(opaque);struct stat st{};if(fstat(s.fd,&st))return AVERROR(errno);
-        if(whence&AVSEEK_SIZE)return st.st_size;
-        int base=whence&~AVSEEK_FORCE;int64_t at=base==SEEK_SET?0:base==SEEK_CUR?s.io_position:base==SEEK_END?st.st_size:-1;
+        int64_t size=st.st_size-s.leading_gap.bytes;
+        if(whence&AVSEEK_SIZE)return size;
+        int base=whence&~AVSEEK_FORCE;int64_t at=base==SEEK_SET?0:base==SEEK_CUR?s.io_position:base==SEEK_END?size:-1;
         if(at<0 || (offset>0 && at>INT64_MAX-offset) || (offset<0 && offset < -at))return AVERROR(EINVAL);
         s.io_position=at+offset;return s.io_position;
     }
     bool open_format(){
+        struct stat source_stat{};
+        if(!fstat(fd,&source_stat))leading_gap=lyra::audio::flac_leading_gap(fd,source_stat.st_size);
+        if(leading_gap.bytes)lyra_log(LyraLogInfo,"Lyra","FLAC recovered verified first frame after %lld leading bytes",(long long)leading_gap.bytes);
         auto *buffer=static_cast<uint8_t*>(av_malloc(32768));if(!buffer)return false;
         avio=avio_alloc_context(buffer,32768,0,this,read_io,nullptr,seek_io);if(!avio){av_free(buffer);return false;}
         fmt=avformat_alloc_context();if(!fmt)return false;fmt->pb=avio;fmt->flags|=AVFMT_FLAG_CUSTOM_IO;
@@ -153,6 +161,13 @@ struct SystemDecode {
             if(stream->start_time!=AV_NOPTS_VALUE)earlier+=stream->start_time;
             rc=av_seek_frame(fmt,index,earlier,AVSEEK_FLAG_BACKWARD);
         }
+        // Some FLAC binary searches reject a tightly bounded tail timestamp.
+        // Ask for the preceding indexed frame even before a first PCM block.
+        if(rc<0)rc=av_seek_frame(fmt,index,at,AVSEEK_FLAG_BACKWARD);
+        // A recovered junk prefix can invalidate a demuxer's byte-search
+        // estimate near EOF. Restart at the verified first frame; the existing
+        // cancellable decode/drop path advances to the requested media PTS.
+        if(rc<0 && leading_gap.bytes)rc=av_seek_frame(fmt,index,0,AVSEEK_FLAG_BACKWARD);
         if(rc<0)return false;
         avcodec_flush_buffers(ctx);av_packet_unref(pkt);av_frame_unref(frame);
         if(swr)swr_free(&swr);av_channel_layout_uninit(&swr_layout);swr_rate=swr_output=0;swr_format=-1;

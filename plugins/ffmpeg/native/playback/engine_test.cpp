@@ -182,5 +182,18 @@ int main(int argc,char **argv){
         watch_mix=false;engine.stop();::close(left);::close(right);
         std::puts("Android real decoder transitions: overlap, shared stream, pause, seek, rapid supersession and mixed sample rates passed");
     }
-    engine.stop();::close(fd);std::puts("Android decoder / PCM clock / rapid lyric and progress seeks passed");
+    engine.stop();
+    if(const char *current=std::getenv("LYRA_TEST_FLAC_FILE")){
+        check(configure_transition(engine.transition_interface(),{false,7000,4000})==0,"disable blend for recovered FLAC test");
+        int track=::open(current,O_RDONLY);check(track>=0,"recovered FLAC descriptor");
+        engine.start(track,100,255000,features,100);
+        for(int64_t target:{int64_t(0),int64_t(127500),int64_t(254900)}){
+            engine.seek(target,Engine::kProgressSeek);
+            check(until([&]{auto s=engine.snapshot();return !s.seeking && s.clock_ready && s.position_us>=target*1000;}),"recovered FLAC seek reaches requested audio");
+            check(engine.snapshot().position_us<target*1000+500000,"recovered FLAC fallback drops PCM up to requested PTS");
+            check(!engine.take_seek_failed(),"recovered FLAC seek has no fatal error");
+        }
+        engine.stop();puts("Recovered FLAC engine startup, middle and tail seek passed");
+    }
+    ::close(fd);std::puts("Android decoder / PCM clock / rapid lyric and progress seeks passed");
 }

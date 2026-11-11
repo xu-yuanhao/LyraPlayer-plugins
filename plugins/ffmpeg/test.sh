@@ -31,4 +31,4 @@ for i in "${!formats[@]}"; do
     args+=("$remote.edge.${formats[$i]}")
 done
 trap 'adb -s "$serial" shell rm -f "$remote" "$remote.toml" "$remote.flac" "${args[@]}" >/dev/null' EXIT
-adb -s "$serial" shell "$remote" "$remote.toml" "$remote.flac" "${args[@]}"
+adb -s "$serial" shell ${LYRA_TEST_FLAC_FILE:+LYRA_TEST_FLAC_FILE=$LYRA_TEST_FLAC_FILE} "$remote" "$remote.toml" "$remote.flac" "${args[@]}"

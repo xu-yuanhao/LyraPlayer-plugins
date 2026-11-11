@@ -18,7 +18,7 @@ GitHub 是主开发仓库，GitLab 为相同提交与发布文件的镜像；镜
 plugins/ffmpeg/build.sh
 ```
 
-需要 Android SDK/NDK 28.2.13676358，以及构建脚本使用的主机工具。默认自动构建 FFmpeg；本机可设置 `LYRA_FFMPEG_PREFIX` 指向已有的同配置构建目录。产物为 `dist/official.ffmpeg-1.4.5-android-arm64-v8a.zip`，不含模型。可选 Stem 包单独运行 `plugins/transition-stems/build.sh` 构建。
+需要 Android SDK/NDK 28.2.13676358，以及构建脚本使用的主机工具。默认自动构建 FFmpeg；本机可设置 `LYRA_FFMPEG_PREFIX` 指向已有的同配置构建目录。产物为 `dist/official.ffmpeg-1.4.6-android-arm64-v8a.zip`，不含模型。可选 Stem 包单独运行 `plugins/transition-stems/build.sh` 构建。
 
 构建的桥接与播放辅助源码来自 LyraPlayer-native 的 c62b234，保持私有编译，不依赖宿主隐藏的 C++ 符号。公共跨库交互只使用 C ABI。平台输出代码编译在插件自身。
 
@@ -49,3 +49,7 @@ FFmpeg 1.0.1 使用官网图标：https://ffmpeg.org/favicon.ico 。图标属于
 原目录私钥遗失；旧 `catalog/index.json`、`index.sig` 和公钥原样保留。新目录发布到 `catalog/v2/`，使用新的 P-256 密钥；新版播放器内置新公钥与目录路径。旧客户端继续使用旧目录，需要更新播放器才能获取新版插件。私钥仅存本机 `~/.local/share/lyra-player/keys/plugin-catalog-v2.pem`，不提交。请单独加密备份它；APK 的 JKS 不能代替目录密钥。新插件先发布 GitHub 附件；未验证的镜像不进入新版目录。
 
 FFmpeg 1.4.5 使用未修改的 FFmpeg 上游实现，精简限于组件配置、编译与链接，不删除内部 DSP 表。完整音频覆盖优先于旧版 1MiB 插件体积目标；主播放器 APK 体积限制不变。发布包含 `audio-decoders.txt`，设备校验可运行 `bash plugins/ffmpeg/tests/decoder_matrix.sh c2208dff`。
+
+## 1.4.6 双版本
+
+`official.ffmpeg` 保留原 20 个解码器及常见封装的精简版；`official.ffmpeg-full` 为 200 个内置音频解码器的完整版。共享 `plugins/ffmpeg` 的引擎实现，不复制播放状态或私有宿主接口。运行 `bash plugins/ffmpeg/build.sh` 或 `bash plugins/ffmpeg-full/build.sh` 分别构建。两版均有 FLAC 首帧恢复修复。只读流按帧 CRC8/CRC16 校验跳过有效音频前的额外数据，不改写用户文件。
