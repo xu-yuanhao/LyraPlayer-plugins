@@ -13,7 +13,7 @@
     "install": "安装字体文件",
     "automatic": "自动选择",
     "size": "大小",
-    "bold": "粗体",
+    "bold": "粗细",
     "installed": "字体已安装",
     "invalid": "字体文件无效或安装失败",
     "selected": "已选择"

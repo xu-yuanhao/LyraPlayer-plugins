@@ -25,7 +25,7 @@ inline constexpr Role control_role(Role role){
 }
 struct Settings {
     std::string family, import_mime_types, preferred_families;
-    std::array<double,count> sizes{};
+    std::array<double,count> sizes{},weights{};
     std::array<bool,count> bold{}, default_bold{};
     bool modified=false,follow_system=false,follow_parameters=false;
     std::array<double,count> minimum{},maximum{};

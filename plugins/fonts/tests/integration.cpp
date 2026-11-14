@@ -4,6 +4,7 @@
 #include "render/scene.h"
 #include "../src/plugin.cpp"
 #include <cassert>
+#include <limits>
 #include <chrono>
 #include <thread>
 #include <fcntl.h>
@@ -41,7 +42,13 @@ int main(int argc,char**argv){
  tap(row(strings::fonts_follow_system));assert(config.settings().fonts.follow_system && page.view().settings_rows_[1].disabled);tap(0);assert(!config.settings().fonts.follow_system);
  auto parameter=row(strings::fonts_follow_parameters);tap(parameter);assert(config.settings().fonts.follow_parameters);for(int i=parameter+1;i<page.view().settings_count_-1;++i)assert(page.view().settings_rows_[i].disabled);tap(parameter);
  auto general=std::string(strings::font_styles_row_title_sp)+strings::fonts_size;tap(row(general.c_str()),"24");assert(config.settings().row_title_sp==24);
- tap(row((std::string(strings::font_styles_row_title_sp)+strings::fonts_bold).c_str()));assert(config.settings().fonts.bold[lyra::fonts::FRowTitleSp]);
+ tap(row((std::string(strings::font_styles_row_title_sp)+strings::fonts_bold).c_str()),"625");assert(config.settings().fonts.weights[lyra::fonts::CGeneral]==625);
+ auto *fonts=instance.get();assert(fonts->select_family("system:fixture"));update();assert(config.settings().fonts.weights[lyra::fonts::CGeneral]==0);
+ assert(fonts->select_family("auto"));update();assert(config.settings().fonts.weights[lyra::fonts::CGeneral]==625);
+ tap(row(strings::fonts_follow_system));assert(config.settings().fonts.weights[lyra::fonts::CGeneral]==0);tap(row(strings::fonts_follow_system));assert(config.settings().fonts.weights[lyra::fonts::CGeneral]==625);
+ Fonts saved;saved.root=storage;saved.config=config.interface();saved.schema=config.schema_interface();saved.load_profiles();assert(saved.profiles.at("auto")[0]==625);
+ int weight_row=row((std::string(strings::font_styles_row_title_sp)+strings::fonts_bold).c_str());
+ double invalid_weight=10000;assert(!fonts->activate(weight_row,false,&invalid_weight));invalid_weight=std::numeric_limits<double>::quiet_NaN();assert(!fonts->activate(weight_row,false,&invalid_weight));
  // slider gesture uses the host's shared rendering/input, not a plugin UI clone.
  page.sync_settings_range(layout);int size_row=row(general.c_str());auto metrics=page.settings_metrics(layout);page.scroll_move(page.row_top(size_row,metrics)-metrics.content_top);float y=page.row_top(size_row,metrics)+metrics.row_h*.5f;
  float x=350;assert(page.control_touch(layout,{sizeof(LyraInput),LYRA_INPUT_DOWN,x,y,0}));assert(page.control_touch(layout,{sizeof(LyraInput),LYRA_INPUT_UP,x,y,1}));auto changed=page.intent(layout,x,y,1);assert(changed.kind==SettingsIntent::Kind::ExtensionAction);page.extension_action(changed);update();assert(config.settings().row_title_sp>=config.settings().fonts.minimum[lyra::fonts::FRowTitleSp] && config.settings().row_title_sp<=config.settings().fonts.maximum[lyra::fonts::FRowTitleSp] && config.settings().row_title_sp!=24);

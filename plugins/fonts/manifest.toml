@@ -1,5 +1,5 @@
 id = "official.fonts"
-version = "1.0.1"
+version = "1.1.0"
 abi = 3
 type = "font"
 entry = "plugin.so"

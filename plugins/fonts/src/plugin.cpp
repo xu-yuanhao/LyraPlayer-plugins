@@ -10,6 +10,11 @@
 #include <cstdlib>
 #include <cstdio>
 #include <memory>
+#include <map>
+#include <array>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 namespace {
 struct Item {std::string title,detail,button,key,id;int64_t flags=0;double value=0,minimum=0,maximum=0,step=0;int action=0;};
 enum {Follow=1,Choose,Import,Installed,Parameters,Size,Bold,Reset,Select,Remove};
@@ -22,6 +27,26 @@ struct Fonts {
  std::vector<Item> rows;
  int64_t page=0,revision=1,count=0,reply_integer=0;
  std::string title,prompt,notice,delete_id,stamp,root;
+ std::map<std::string,std::array<int,6>> profiles;
+ static std::string weight_key(size_t role){auto key=std::string(lyra::custom_fonts::size_keys[role]);key.replace(0,std::strlen("typography.sizes."),"typography.weights.");return key;}
+ void load_profiles(){
+  int fd=open((root+"/font-weights.state").c_str(),O_RDONLY|O_CLOEXEC|O_NOFOLLOW);if(fd<0)return;struct stat st{};
+  if(fstat(fd,&st) || st.st_size>65536){close(fd);return;}FILE*f=fdopen(fd,"rb");if(!f){close(fd);return;}
+  std::map<std::string,std::array<int,6>> loaded;
+  for(size_t n=0;n<256;++n){uint32_t size=0;if(fread(&size,sizeof(size),1,f)!=1)break;if(size==0 || size>1024){loaded.clear();break;}
+   std::string id(size,0);std::array<int,6> weights{};if(fread(id.data(),1,size,f)!=size || fread(weights.data(),sizeof(weights),1,f)!=1){loaded.clear();break;}
+   bool valid=true;for(int w:weights)valid&=w==0 || (w>=number("typography.minimum_weight") && w<=number("typography.maximum_weight"));if(!valid){loaded.clear();break;}loaded.emplace(std::move(id),weights);
+  }fclose(f);profiles=std::move(loaded);
+ }
+ bool select_family(const std::string &id,bool change_family=true){
+  auto &current=profiles[settings.follow_system?"@system":settings.family];size_t index=0;for(auto role:lyra::custom_fonts::controls)current[index++]=int(number(weight_key(size_t(role)).c_str()));
+  std::array<int,6> next{};auto found=profiles.find(id);if(found!=profiles.end())next=found->second;
+  std::string path=root+"/font-weights.state",tmp=path+".tmp";int fd=open(tmp.c_str(),O_WRONLY|O_CREAT|O_TRUNC|O_CLOEXEC|O_NOFOLLOW,0600);if(fd<0)return false;FILE*f=fdopen(fd,"wb");if(!f){close(fd);return false;}bool okay=true;
+  for(const auto &profile:profiles){uint32_t size=uint32_t(profile.first.size());okay=okay && size>0 && size<=1024 && fwrite(&size,sizeof(size),1,f)==1 && fwrite(profile.first.data(),1,size,f)==size && fwrite(profile.second.data(),sizeof(profile.second),1,f)==1;}
+  if(fclose(f))okay=false;if(!okay || rename(tmp.c_str(),path.c_str())){unlink(tmp.c_str());return false;}
+  index=0;for(auto role:lyra::custom_fonts::controls)if(!write(weight_key(size_t(role)),std::to_string(next[index++])))return false;
+  return !change_family || write("typography.family",quote(id));
+ }
  int64_t polled_ns=0;
  bool reset=false,ready=false;
  LyraSettingsPageV3 api{};LyraFontManagerV3 manager{};
@@ -38,14 +63,14 @@ struct Fonts {
   settings.family=unquote(read("typography.family"));settings.follow_system=read("typography.follow_system")=="true";settings.follow_parameters=read("typography.follow_parameters")=="true";
   settings.minimum_ratio=std::strtod(read("typography.minimum_ratio").c_str(),nullptr);settings.maximum_ratio=std::strtod(read("typography.maximum_ratio").c_str(),nullptr);
   settings.minimum_size_sp=number("typography.minimum_size_sp");settings.maximum_size_sp=number("typography.maximum_size_sp");settings.import_max_bytes=number("typography.import_max_bytes");settings.import_timeout_ms=number("typography.import_timeout_ms");settings.import_limit=number("typography.import_limit");settings.recommended_limit=number("typography.recommended_limit");settings.import_mime_types=unquote(scalar("typography.import_mime_types"));settings.preferred_families=unquote(scalar("typography.preferred_families"));
-  for(auto role:lyra::custom_fonts::controls){auto i=size_t(role);auto v=read(lyra::custom_fonts::size_keys[i]);auto b=read(lyra::custom_fonts::bold_keys[i]);settings.sizes[i]=std::strtod(v.c_str(),nullptr);settings.bold[i]=b=="true";
+  for(auto role:lyra::custom_fonts::controls){auto i=size_t(role);auto v=read(lyra::custom_fonts::size_keys[i]);auto b=read(lyra::custom_fonts::bold_keys[i]);auto w=read(weight_key(i).c_str());settings.weights[i]=std::strtod(w.c_str(),nullptr);settings.sizes[i]=std::strtod(v.c_str(),nullptr);settings.bold[i]=b=="true";
    auto base=number(lyra::custom_fonts::size_keys[i],1);settings.minimum[i]=std::max(settings.minimum_size_sp,std::ceil(base*settings.minimum_ratio));settings.maximum[i]=std::min(settings.maximum_size_sp,std::floor(base*settings.maximum_ratio));settings.sizes[i]=std::clamp(settings.sizes[i],settings.minimum[i],settings.maximum[i]);
   }
   if(next!=stamp){stamp=std::move(next);++revision;settings.modified=false;
    for(auto key:{"typography.family","typography.follow_system","typography.follow_parameters"})settings.modified|=scalar(key)!=scalar(key,1);
-   for(size_t i=0;i<lyra::custom_fonts::count;++i){settings.modified|=scalar(lyra::custom_fonts::size_keys[i])!=scalar(lyra::custom_fonts::size_keys[i],1);settings.modified|=scalar(lyra::custom_fonts::bold_keys[i])!=scalar(lyra::custom_fonts::bold_keys[i],1);}catalog.preferences(settings);catalog.configure(int(number("player.font_weight_regular")),int(number("player.font_weight_light")),int(number("player.font_weight_bold")),int(number("player.font_weight_heavy")));build();}
+   for(size_t i=0;i<lyra::custom_fonts::count;++i){settings.modified|=scalar(lyra::custom_fonts::size_keys[i])!=scalar(lyra::custom_fonts::size_keys[i],1);settings.modified|=scalar(lyra::custom_fonts::bold_keys[i])!=scalar(lyra::custom_fonts::bold_keys[i],1);if(std::find(std::begin(lyra::custom_fonts::controls),std::end(lyra::custom_fonts::controls),lyra::custom_fonts::Role(i))!=std::end(lyra::custom_fonts::controls))settings.modified|=number(weight_key(i).c_str())!=0;}catalog.preferences(settings);catalog.configure(int(number("player.font_weight_regular")),int(number("player.font_weight_light")),int(number("player.font_weight_bold")),int(number("player.font_weight_heavy")));build();}
  }
- static bool mutable_key(const std::string &k){return k=="typography.family" || k=="typography.follow_system" || k=="typography.follow_parameters" || k.rfind("typography.sizes.",0)==0 || k.rfind("typography.bold.",0)==0;}
+ static bool mutable_key(const std::string &k){return k=="typography.family" || k=="typography.follow_system" || k=="typography.follow_parameters" || k.rfind("typography.sizes.",0)==0 || k.rfind("typography.bold.",0)==0 || k.rfind("typography.weights.",0)==0;}
  void build(){
   using namespace strings;rows.clear();
   auto add=[&](const char *label,int action,int64_t flags=0,const std::string &detail={}) -> Item&{rows.push_back({label,detail});auto &r=rows.back();r.action=action;r.flags=flags;return r;};
@@ -61,7 +86,7 @@ struct Fonts {
    const char *labels[]={font_styles_row_title_sp,font_styles_title_sp,font_styles_artist_sp,font_styles_duration_sp,font_styles_lyric_main_mini_sp,font_styles_lyric_main_expanded_sp};
    size_t label_index=0;for(auto role:lyra::custom_fonts::controls){auto i=size_t(role);auto label=labels[label_index++];
     auto name=std::string(label)+fonts_size;auto &s=add(name.c_str(),Size,controls|LYRA_SETTINGS_SLIDER);s.key=lyra::custom_fonts::size_keys[i];s.value=settings.sizes[i];s.minimum=settings.minimum[i];s.maximum=settings.maximum[i];s.step=1;
-    name=std::string(label)+fonts_bold;auto &b=add(name.c_str(),Bold,controls|LYRA_SETTINGS_TOGGLE|(settings.bold[i]?LYRA_SETTINGS_CHECKED:0));b.key=lyra::custom_fonts::bold_keys[i];
+    name=std::string(label)+fonts_bold;auto &b=add(name.c_str(),Bold,controls|LYRA_SETTINGS_SLIDER,settings.weights[i]==0?fonts_automatic:"");b.key=weight_key(i);b.minimum=number("typography.minimum_weight");b.maximum=number("typography.maximum_weight");b.step=number("typography.weight_step");b.value=std::clamp(settings.weights[i]?settings.weights[i]:number(settings.bold[i]?"player.font_weight_bold":"player.font_weight_light"),b.minimum,b.maximum);
     if(role==lyra::custom_fonts::FRowTitleSp || role==lyra::custom_fonts::FDurationSp || role==lyra::custom_fonts::FLyricMainMiniSp || role==lyra::custom_fonts::FLyricMainExpandedSp)b.flags|=LYRA_SETTINGS_GROUP_END;
    }
    add(fonts_reset,Reset,LYRA_SETTINGS_GROUP_END|(settings.modified?0:LYRA_SETTINGS_DISABLED));
@@ -83,23 +108,23 @@ struct Fonts {
   if(index<0 || size_t(index)>=rows.size() || !prompt.empty())return false;auto row=rows[size_t(index)];if(row.flags&LYRA_SETTINGS_DISABLED)return false;
   notice.clear();
   switch(row.action){
-  case Follow:toggle("typography.follow_system");break;
+  case Follow:if(select_family(settings.follow_system?settings.family:"@system",false))toggle("typography.follow_system");break;
   case Choose:page=1;++revision;build();break;
   case Installed:page=2;++revision;build();break;
   case Import:if(!catalog.picking){catalog.picking=font_pick(host,strings::fonts_install,settings.import_mime_types.c_str())==0;if(!catalog.picking){notice=strings::fonts_invalid;++revision;}}break;
   case Parameters:toggle("typography.follow_parameters");break;
   case Size:{if(!value || !std::isfinite(*value) || *value<row.minimum || *value>row.maximum)return false;char s[64];std::snprintf(s,sizeof(s),"%.6g",std::round(*value));write(row.key,s);break;}
-  case Bold:write(row.key,(row.flags&LYRA_SETTINGS_CHECKED)?"false":"true");break;
+  case Bold:if(!value || !std::isfinite(*value) || *value<row.minimum || *value>row.maximum)return false;write(row.key,std::to_string(int(std::clamp(row.minimum+std::round((*value-row.minimum)/row.step)*row.step,row.minimum,row.maximum))));break;
   case Reset:reset=true;delete_id.clear();prompt=strings::fonts_reset_prompt;++revision;break;
-  case Select:if(secondary && !row.button.empty()){reset=false;delete_id=row.id;prompt=strings::fonts_remove_prompt;++revision;}else if(write("typography.family",quote(row.id))){page=0;build();}break;
+  case Select:if(secondary && !row.button.empty()){reset=false;delete_id=row.id;prompt=strings::fonts_remove_prompt;++revision;}else if(select_family(row.id)){page=0;build();}break;
   default:return false;
   }
   if(host && host->request_frame)host->request_frame(host->user);return true;
  }
  bool confirm(bool yes){
   if(prompt.empty())return false;prompt.clear();++revision;
-  if(yes){if(reset){for(int i=0;i<config->count(config->user);++i){LyraConfigDescriptionV3 d{};d.size=sizeof(d);if(config->describe(config->user,i,&d)==0 && mutable_key(d.key) && std::strcmp(d.value,d.default_value))write(d.key,d.default_value);}}
-   else{bool selected=catalog.choice(settings.family)==catalog.choice(delete_id);if(catalog.remove(delete_id)){if(selected)write("typography.family","\"auto\"");stamp.clear();if(page==2 && std::none_of(catalog.view().choices.begin(),catalog.view().choices.end(),[](const auto&c){return c.user;}))page=0;}else notice="删除字体失败";}}
+  if(yes){if(reset){profiles.clear();unlink((root+"/font-weights.state").c_str());for(int i=0;i<config->count(config->user);++i){LyraConfigDescriptionV3 d{};d.size=sizeof(d);if(config->describe(config->user,i,&d)==0 && mutable_key(d.key) && std::strcmp(d.value,d.default_value))write(d.key,d.default_value);}}
+   else{bool selected=catalog.choice(settings.family)==catalog.choice(delete_id);if(catalog.remove(delete_id)){if(selected)select_family("auto");profiles.erase(delete_id);stamp.clear();if(page==2 && std::none_of(catalog.view().choices.begin(),catalog.view().choices.end(),[](const auto&c){return c.user;}))page=0;}else notice="删除字体失败";}}
   delete_id.clear();return true;
  }
  static int request(void *user,const LyraMessageV3 *m,LyraReplyV3 *reply){
@@ -139,7 +164,8 @@ int init(const LyraHostV3 *h){
  s->config=static_cast<const LyraConfigInterfaceV3*>(h->query_interface(h->user,LYRA_INTERFACE_CONFIG,LYRA_INTERFACE_VERSION,sizeof(LyraConfigInterfaceV3)));
  s->schema=static_cast<const LyraConfigSchemaV3*>(h->query_interface(h->user,LYRA_INTERFACE_CONFIG_SCHEMA,LYRA_INTERFACE_VERSION,sizeof(LyraConfigSchemaV3)));
  if(!s->config || !s->config->write || !s->config->count || !s->config->describe || s->config->size!=sizeof(*s->config) || s->config->version!=LYRA_INTERFACE_VERSION || !s->schema || !s->schema->text || s->schema->size!=sizeof(*s->schema) || s->schema->version!=LYRA_INTERFACE_VERSION)return -1;
- s->root=font_storage(h);if(s->root.empty())return -1;s->catalog.user_root(s->root);s->refresh();
+ s->root=font_storage(h);if(s->root.empty())return -1;if(s->scalar("typography.weights.row_title_sp").empty() || s->number("typography.minimum_weight")<=0 || s->number("typography.minimum_weight")>=s->number("typography.maximum_weight") || s->number("typography.weight_step")<=0)return -1;
+ s->catalog.user_root(s->root);s->load_profiles();s->refresh();
  s->api={sizeof(s->api),LYRA_INTERFACE_VERSION,s.get(),Fonts::request};
  s->manager={sizeof(s->manager),LYRA_INTERFACE_VERSION,s.get(),[](void *u,const LyraMessageV3*m,LyraReplyV3*r){
   if(!r || r->size!=sizeof(*r))return LYRA_MESSAGE_INVALID;r->field_count=0;r->status=LYRA_MESSAGE_INVALID;
@@ -160,7 +186,7 @@ int init(const LyraHostV3 *h){
 }
 extern "C" __attribute__((visibility("default"))) int lyra_plugin_init(const LyraHostV3*h,LyraPluginV3*out){
  if(!out || !h || h->size!=sizeof(*h) || h->abi!=LYRA_PLUGIN_ABI)return -1;
- *out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id="official.fonts";out->kind="font";out->version="1.0.1";out->config_tables="typography";out->init=init;
+ *out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id="official.fonts";out->kind="font";out->version="1.1.0";out->config_tables="typography";out->init=init;
  out->shutdown=[](const LyraHostV3*){instance.reset();};out->on_frame=[](const LyraHostV3*,int64_t){if(instance)instance->frame();return 0;};
  out->supply=[](const LyraHostV3*,int64_t id,char *out,int cap){if(!instance)return 0;if(instance->settings.follow_system){const char *s="sans-serif";if(!out || cap<=int(std::strlen(s)))return 0;std::strcpy(out,s);return int(std::strlen(s));}return instance->catalog.supply(id,out,cap);};
  out->query_interface=[](const LyraHostV3*,uint32_t id,uint32_t version,uint32_t size)->const void*{if(!instance || version!=LYRA_INTERFACE_VERSION)return nullptr;if(id==LYRA_INTERFACE_SETTINGS_PAGE && size==sizeof(LyraSettingsPageV3))return &instance->api;if(id==LYRA_INTERFACE_FONT_MANAGER && size==sizeof(LyraFontManagerV3))return &instance->manager;return nullptr;};return 0;
