@@ -1,0 +1,12 @@
+id = "official.fonts"
+version = "1.0.0"
+abi = 3
+type = "font"
+entry = "plugin.so"
+title = "字体自定义"
+author = "Xu YuanHao"
+author_url = "https://github.com/xu-yuanhao"
+homepage = "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/fonts"
+license = "MIT"
+readme = "README.md"
+changelog = "CHANGELOG.md"

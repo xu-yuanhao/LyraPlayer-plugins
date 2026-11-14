@@ -55,3 +55,9 @@ FFmpeg 1.4.5 使用未修改的 FFmpeg 上游实现，精简限于组件配置�
 `official.ffmpeg` 保留原 20 个解码器及常见封装的精简版；`official.ffmpeg-full` 为 200 个内置音频解码器的完整版。共享 `plugins/ffmpeg` 的引擎实现，不复制播放状态或私有宿主接口。运行 `bash plugins/ffmpeg/build.sh` 或 `bash plugins/ffmpeg-full/build.sh` 分别构建。两版均有 FLAC 首帧恢复修复。只读流按帧 CRC8/CRC16 校验跳过有效音频前的额外数据，不改写用户文件。
 
 1.4.7 两版均实现宿主已登记的可选输出音量消息（operation 10，level/ramp tags 400/401；见 sdk/issued-output-gain.json），不变更 ABI 3 结构或接口 ID。通知压低音量期间不暂停、不重建音频流，恢复焦点后平滑还原。
+
+## 可选字体自定义
+
+`plugins/fonts` 将详细字体选择、导入、删除、字号和粗体设置外置。主程序默认扫描并自动选择字体、官方默认参数保持独立。运行 `plugins/fonts/build.sh` 构建，`plugins/fonts/tests/run.sh` 使用并列 native 工程的主机测试库验证真实配置和设置页路径。不会自动安装插件。
+
+公共设置页消息接口见 `sdk/include/plugin/settings_contracts.h`（fresh ID 26）和 `sdk/issued-settings-interface.json`。任意选中的服务均可提供此可选接口；宿主枚举端点绘制卡片、开关、滑块和确认框，不按插件名称分支。插件通过宿主同一配置接口读取默认值与写入参数。字体插件同时保留已公布的字体删除接口 ID 25。Android 平台契约 8 的公开方法表见 `sdk/android-platform-v8.json`，使用前必须精确握手。
