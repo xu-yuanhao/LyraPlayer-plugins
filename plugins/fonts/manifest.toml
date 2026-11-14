@@ -1,5 +1,5 @@
 id = "official.fonts"
-version = "1.0.0"
+version = "1.0.1"
 abi = 3
 type = "font"
 entry = "plugin.so"
@@ -10,3 +10,4 @@ homepage = "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/f
 license = "MIT"
 readme = "README.md"
 changelog = "CHANGELOG.md"
+icon = "icon.png"

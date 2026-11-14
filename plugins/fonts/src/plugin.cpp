@@ -160,7 +160,7 @@ int init(const LyraHostV3 *h){
 }
 extern "C" __attribute__((visibility("default"))) int lyra_plugin_init(const LyraHostV3*h,LyraPluginV3*out){
  if(!out || !h || h->size!=sizeof(*h) || h->abi!=LYRA_PLUGIN_ABI)return -1;
- *out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id="official.fonts";out->kind="font";out->version="1.0.0";out->config_tables="typography";out->init=init;
+ *out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id="official.fonts";out->kind="font";out->version="1.0.1";out->config_tables="typography";out->init=init;
  out->shutdown=[](const LyraHostV3*){instance.reset();};out->on_frame=[](const LyraHostV3*,int64_t){if(instance)instance->frame();return 0;};
  out->supply=[](const LyraHostV3*,int64_t id,char *out,int cap){if(!instance)return 0;if(instance->settings.follow_system){const char *s="sans-serif";if(!out || cap<=int(std::strlen(s)))return 0;std::strcpy(out,s);return int(std::strlen(s));}return instance->catalog.supply(id,out,cap);};
  out->query_interface=[](const LyraHostV3*,uint32_t id,uint32_t version,uint32_t size)->const void*{if(!instance || version!=LYRA_INTERFACE_VERSION)return nullptr;if(id==LYRA_INTERFACE_SETTINGS_PAGE && size==sizeof(LyraSettingsPageV3))return &instance->api;if(id==LYRA_INTERFACE_FONT_MANAGER && size==sizeof(LyraFontManagerV3))return &instance->manager;return nullptr;};return 0;

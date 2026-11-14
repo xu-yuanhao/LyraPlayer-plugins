@@ -1,16 +1,16 @@
 {
   "id": "official.fonts",
   "title": "字体自定义",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "abi": 3,
   "platform": "android",
   "arch": "arm64-v8a",
   "capability": "font",
   "description": "可选的详细字体设置：推荐、导入、删除、字号和粗体。默认字体自动择优仍由主程序提供。",
   "tags": "字体 font typography 字号 粗体 导入 自定义",
-  "package": "official.fonts-1.0.0-android-arm64-v8a.zip",
+  "package": "official.fonts-1.0.1-android-arm64-v8a.zip",
   "urls": [
-    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/fonts-v1.0.0/official.fonts-1.0.0-android-arm64-v8a.zip"
+    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/fonts-v1.0.1/official.fonts-1.0.1-android-arm64-v8a.zip"
   ],
   "author": "Xu YuanHao",
   "author_url": "https://github.com/xu-yuanhao",
@@ -19,5 +19,6 @@
   "readme": "README.md",
   "changelog": "CHANGELOG.md",
   "entry": "plugin.so",
-  "config": "typography"
+  "config": "typography",
+  "icon": "icon.png"
 }
