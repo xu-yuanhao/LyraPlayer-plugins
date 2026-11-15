@@ -73,7 +73,8 @@
       "tags": "字体 font typography 字号 粗细 导入 自定义",
       "title": "字体自定义",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/fonts-v1.1.0/official.fonts-1.1.0-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/fonts-v1.1.0/official.fonts-1.1.0-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.fonts/1.1.0/official.fonts-1.1.0-android-arm64-v8a.zip"
       ],
       "version": "1.1.0"
     },
