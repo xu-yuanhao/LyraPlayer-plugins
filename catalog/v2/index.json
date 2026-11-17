@@ -57,9 +57,9 @@
       "arch": "arm64-v8a",
       "author": "Xu YuanHao",
       "author_url": "https://github.com/xu-yuanhao",
-      "bytes": 112886,
+      "bytes": 112965,
       "capability": "font",
-      "changelog": "# 1.1.0\n\n- 粗体开关改为粗细滑条，限制不安全的极端参数。\n- 切换新字体时自动选择粗细，按字体保留手动设置。\n\n# 1.0.1\n\n- 新增字体插件图标，便于在插件市场及已安装列表中识别。\n\n# 1.0.0\n\n- 将主程序的详细字体设置、推荐目录、字体导入和删除迁入可选插件。\n- 使用公共设置页接口，沿用主程序的原有卡片、开关、滑块和确认框。\n- 兼容原有参数与已安装字体；保留独立于插件的主程序默认字体择优和官方默认参数。\n",
+      "changelog": "# 1.1.1\n\n- 适配新版主程序的 Android 平台接口。\n\n# 1.1.0\n\n- 粗体开关改为粗细滑条，限制不安全的极端参数。\n- 切换新字体时自动选择粗细，按字体保留手动设置。\n\n# 1.0.1\n\n- 新增字体插件图标，便于在插件市场及已安装列表中识别。\n\n# 1.0.0\n\n- 将主程序的详细字体设置、推荐目录、字体导入和删除迁入可选插件。\n- 使用公共设置页接口，沿用主程序的原有卡片、开关、滑块和确认框。\n- 兼容原有参数与已安装字体；保留独立于插件的主程序默认字体择优和官方默认参数。\n",
       "config": "typography",
       "description": "可选的详细字体设置：推荐、导入、删除、字号和粗细。默认字体自动择优仍由主程序提供。",
       "entry": "plugin.so",
@@ -69,14 +69,14 @@
       "license": "MIT",
       "platform": "android",
       "readme": "# 字体自定义\n\n为 Lyra Player 增加原有的详细字体设置。安装并启用后，设置页出现“字体”入口，使用主程序相同的卡片、开关、滑块和确认框。\n\n支持跟随系统字体、自动选择或推荐字体、导入 TTF/OTF/TTC 字体、管理已安装字体及全部字重，以及通用界面、播放歌名、歌手、时间、迷你和展开歌词的字号和粗细调整。可以跟随系统字号参数，也可以确认恢复官方默认值；重置不会删除导入文件。导入采用有上限、超时及元数据校验的后台任务，删除仅允许插件私有目录中的已安装字体。\n\n需要包含字体自动粗细适配与数值字重配置的新版主程序，并支持公共设置页消息接口（ID 26）和 Android 平台契约 8。插件不附带字体文件。原有字体设置和已导入字体继续使用，无需重新导入。\n\n粗细滑条有安全范围；新字体默认自动适配粗细，调整后按字体保留手动设置，切换回来不会覆盖。恢复默认会清除这些手动设置，但不删除字体文件。\n\n不安装此插件，主程序仍会自动选择默认字体和适合它的粗细，保留官方默认字号。插件仅通过已公布的配置、设置页及 Android Activity 接口工作，不依赖宿主的私有 C++ 符号。\n",
-      "sha256": "323d71990187295a25b9179da94b290b480b233e0de54dfda53de6a7616f2939",
+      "sha256": "b8c4047f08bc99afc67d6e9973f5e748adb611dfc13bbdb9ef7366c3a43b8899",
       "tags": "字体 font typography 字号 粗细 导入 自定义",
       "title": "字体自定义",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/fonts-v1.1.0/official.fonts-1.1.0-android-arm64-v8a.zip",
-        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.fonts/1.1.0/official.fonts-1.1.0-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/fonts-v1.1.1/official.fonts-1.1.1-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.fonts/1.1.1/official.fonts-1.1.1-android-arm64-v8a.zip"
       ],
-      "version": "1.1.0"
+      "version": "1.1.1"
     },
     {
       "abi": 3,
