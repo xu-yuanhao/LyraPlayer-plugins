@@ -57,24 +57,25 @@
       "arch": "arm64-v8a",
       "author": "Xu YuanHao",
       "author_url": "https://github.com/xu-yuanhao",
-      "bytes": 78604,
+      "bytes": 81111,
       "capability": "statusbar-lyrics",
-      "changelog": "# 1.0.0\n\n- 新增 Flyme 状态栏歌词插件，跟随播放与跳转，并在暂停及间奏时自动清除。\n",
+      "changelog": "# 1.0.1\n\n- 新增插件图标。\n\n# 1.0.0\n\n- 新增 Flyme 状态栏歌词插件，跟随播放与跳转，并在暂停及间奏时自动清除。\n",
       "description": "将当前歌词显示在支持该功能的 Flyme 状态栏；无需 Root，其他系统自动保持停用。首版待 Flyme 真机反馈。",
       "entry": "plugin.so",
       "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/flyme-lyrics",
+      "icon": "data:image/png;base64,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",
       "id": "official.flyme-lyrics",
       "license": "MIT",
       "platform": "android",
       "readme": "# Flyme 状态栏歌词\n\n在支持状态栏歌词的 Flyme 设备上，将 Lyra 当前演唱的歌词显示在系统状态栏。安装并启用插件即可使用；请同时开启系统中的状态栏歌词选项，并允许 Lyra 的播放通知。\n\n- 使用魅族官方公开的通知 ticker 适配方案，不需要 Root、悬浮窗或通知读取授权。\n- 自动探测设备能力；不支持该扩展的设备上不启动定时器和通知线程。\n- 复用当前播放通知，保留原有封面、按钮、MediaSession 和通知渠道，不增加第二条通知。\n- 跟随播放进度和跳转，暂停、停止、间奏、无时间轴歌词和切歌等待时清除歌词；对唱重叠时显示最近开始的当前主句。\n- 后台同步通过系统事件循环运行，不依赖界面绘制，不要求持续绘制或提高屏幕刷新率。\n- 卸载/禁用插件时清除由插件设置的歌词标志，不删除播放通知。\n\n需要支持 ABI 3 歌词与播放公共接口的 Lyra Player、Android 8 或以上。只调用已有插件 SDK 与系统接口，不修改宿主或增加宿主 APK 体积。歌词不联网、不上传、不写入日志。不支持该功能的设备无需安装。\n\n## 兼容性\n\n按 Flyme 官方文档探测 `FLAG_ALWAYS_SHOW_TICKER` 与 `FLAG_ONLY_UPDATE_TICKER`；接口缺失或被系统限制时保持不启用。不同 Flyme 机型、系统设置和版本可能影响显示。首版尚无 Flyme 真机视觉验收，欢迎反馈机型和系统版本。\n\n官方适配说明：https://open.flyme.cn/docs?id=239\n\n## 构建\n\n在仓库根目录运行 `plugins/flyme-lyrics/build.sh`。使用 Android SDK 36 / NDK 28.2.13676358；Java 系统通知桥编译为 DEX 并内嵌在插件自身，通过 Android 8 起公开的 InMemoryDexClassLoader 加载，无额外 APK、宿主 Java 类或私有符号依赖。\n\n测试：`python3 plugins/flyme-lyrics/tests/run.py`。\n",
-      "sha256": "d0ba09abc5c38d6a616b7989395817a5f78513cd916a5b78221d8d1ab9297da8",
+      "sha256": "f64cce6345cf74f963809928ca9af43ed49973d85fd367fce6fc4a288b4f14d0",
       "tags": "Flyme 魅族 状态栏 歌词",
       "title": "Flyme 状态栏歌词",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/flyme-lyrics-v1.0.0/official.flyme-lyrics-1.0.0-android-arm64-v8a.zip",
-        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.flyme-lyrics/1.0.0/official.flyme-lyrics-1.0.0-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/flyme-lyrics-v1.0.1/official.flyme-lyrics-1.0.1-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.flyme-lyrics/1.0.1/official.flyme-lyrics-1.0.1-android-arm64-v8a.zip"
       ],
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "abi": 3,
@@ -101,6 +102,31 @@
         "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.fonts/1.1.1/official.fonts-1.1.1-android-arm64-v8a.zip"
       ],
       "version": "1.1.1"
+    },
+    {
+      "abi": 3,
+      "arch": "arm64-v8a",
+      "author": "Xu YuanHao",
+      "author_url": "https://github.com/xu-yuanhao",
+      "bytes": 94995,
+      "capability": "lyricon-provider",
+      "changelog": "# 1.0.0\n\n- 新增独立 Lyricon 歌词连接插件，支持逐字歌词、译文、注音及播放进度同步。\n",
+      "description": "向 Lyricon（词幕）发送主歌词、逐字时间、译文和注音；需要 Android 8.1 及以上与已激活的词幕中心服务。",
+      "entry": "plugin.so",
+      "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/lyricon",
+      "icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABmJLR0QA/wD/AP+gvaeTAAAJMklEQVR4nO3dbWwUxxkH8P8zd+cDjA2NYgwJUguVeYvA9YtoGxIElLRA35CVVqBgsCihEhUFI9NvSWkrVYpwEztWqOJa4SIcmojGbaW0kKaCFEqbVLHBoNAAEhEqAgxpa8DY2He3Tz8Yp7bhfG97M7c3z++Tvbe384j9s+PZ2bkjZEhddWd+1Bd5HFDlTDwbTLMBFBH4MwzkA8jLVNseNUDAbQb9F8B1gD8C0VmG0xGI+P9av6/0diYaJTcPtn3dB9PgV2sBVAFYCCDg5vEtFgbT+6ScNj9Hf707tPCqWwd2JQA71p9cGlVOHQFfA+Bz45gipijAhwBV3xAqezfdg6UVgNqNHcvh4CcMPJpuISIlx0H8bMPeisOpHiClANy91D8HoDrVhoV7iOktUuEtz+9d+K+k35vsG2prOtYw8DKAwmTfKzLqBoOebgyVHUjmTQkHYFfNkXHdmNQA4PtJlya0YfAep6BwR1NTSX8i+ycUgC1bPpyY19vfBuCJtKoTurwbzHNWP9dceSPejnEDUFfdOSXii74N4AuulCa0YOITgYh/Rf2+0mtj7TdmALY+9V6hL5B3BEC5q9UJXU4DtLghVNYdawcV64VdNUfG+QJ5v4ecfC+bD/CbW7eeD8baIWYAumlyI4AlmahKaLXMd6vnF7FevG8XULuh/btM9EbmahK6EeipF0Jl++/dPkrt+pMPs3LOQMb5ueYGIs7chtbKK8M33tMFsI+fh5z8XDSJ/ap+9MYRV4DajR3L2cE7+moS+tHS4ZNII64A7GCX7nKEZsQ/H/7rpwHYsf7kUgCLtBck9GJ8eduGjsVDv34agKhy6sxUJHRToJ1DPxMAbNt0upjC4Usg+M2VJbRhRDgQmN7YMr9LAQBFI9Vy8i1C8KtIZA0w1AUwrzZakNCOwVUAQHXVnfkRX/Q/kKd0bTPgj/oeUGF/5DHIybdRXtjnPKoUqwrTlQhTuFwx8WzTZQhDmGaruyt2hIVI8RwF8FTThQhDmIoVgALTdQhDmAsVgImm6xCGEAr80DwELCoOYu6CQgQCMZ9Gs1I47OCfp27ieldCj/O7Jaj19u+ipQ+iat10KOXqouSc8e01jLbWSzh+5BNtbWr7b1hUHJSTH4dShKp101FUHPMhXvfb1NXQvNJJcvIToBRhXukkfe3pamj8BPnYgETp/LeSv8QsJwGwXFY8BPLx+du4cL7HdBlazSyZiBkl+abLyI4AnDtzC4d+dyX+jjlkxeppWREA6QIsJwGwnATAchIAy0kALJcVowAThmYlAZiYhcsaVgZg9KykiVm4bGFdF3C/WUkTs3DZwroAxJqV1D0Lly2sC8BYM202zlhaFwAxkgTAchIAy3l2GGh6HG+6fbd4MgCmx/Gm23eT57oA0+N40+27zXMBMD2ON92+2zwXANPjeNPtu81zARDukgBYTgJgOQmA5SQAlpMAWE4CYDkJgOUkAJbzXAD6eqMpvZYr7bvNcwE403kDjsP3bHccxpnOuF+V6/n23ea5AFzv6kdb66URJ8FxBqdjdczJm27fbZ58HuD4kU9w7swtYw9kmG7fTZ4MADD4P/H6O9etbd8tnusChLskAJaTAFjOugDk2jg+XdYFINfG8emyLgC5No5Pl2eHgenIpXF8uqwMAJA74/h0WdcFiJGy4gowoyQfX1lVnNC+bn2zhulvLsmGTwkFsiQAs+YVYNa8xL+7Kp21eETA8m9MxYrVU+X7C+DRLiDVtXjBcQo1P5iBVVXT5OTf5ckAAMmvxSsqDmL7M7OxoGJyBqvyHm1dQCbusiW6Fm9eaSHWbf6cZ9bu6bwjqe0KEOsOXCYRAV/95lRs2vZ5z5x83XcktQXgfnfgMmmov19ZNQ3kke7exB1JraOA4XfgCicHEnpPKt+sUVQcxMYfzsTUh8bF3bevN4r3j/4bUc1Xp9FudoeN3JHUPgxM9g5cst+sMXfBYH8/IT/+Jf/a1X680nQBXZfvJHz8XJMV9wHcQAQsW1mMrz/5UEKX/A87b6D15Yu402ffFPBwORGAYFBh7abPorQy/hCPGTh8sAt/+M1lsNmrflbwfAAenDLY3097OH5/f6cviv0tF3G6w755/1g8HYCZs/Kx+ImihIZ4Vy/fwSsvXrB22jcWTwegZG5i8wfS38fm6QDEI/19fDkbAOnvE5OTAZDxfeJyLgCn2ruxv+Ui+u84pkvxBD+AAQB5pgtJl/T3Ken3A+gB8IDpStIh/X2KGLf8AG4hiwMQb25cxvdpILqpGMjq720f6zmCU+3daPjZWTn5KSLwVUWEc6YLGUuslTx/bLuC0Esfyx97aXCYzvqJ6Swju/9qkpU8GUJ81u+Q006c/Y/MyEoe9ymFdtUX4GMYHAoKuwzc9jt/U83Nlb1g+ofpaoR2f29uruwdfCiU+LeGixGaMaMNuPtUMPsDr4ERMVuS0IYRQSDwBnA3AI0t87tA/LbZqoQ2hIONLfO7gBHrAlS9qXqEXgTe/f+fh9m+4cQxED+mvySh0V8aQuVLhn4ZuTJIOT/WXY3Qipnx7PANIwLQsLfiMAOv661JaNTa+Gr50eEb7lkbSBFnBwCZV8093QFEfjR64z0BaGitvMKgp/XUJHRhxqbdoYVXR2+/7+rgxlDZATB+mfmyhA5EeLHx1fI37/dazOXh0cKCWgCHM1aV0IPx50k9wZ2xXo4ZgKamkv481bsaQEdGChM6nAoGnSd3HXgk5mRf3HnguurOKWF/5BAxlblbm8gkAtp9Ud+q+n2l18baL+4nhNTvK70WHj9uMcB/cq88kWGHI+GBZfFOPpDgR8Ts2fNIT7Sg8FsAvZR+bSLDmibfDq5seu1LNxPZOelHgbbVnPgOgX8FIPHPaBM6dAP8vYZQRVsyb0r6Q6IaQ2UHAojMAbAPyPKHCS1BTG9F/b75yZ58IIUrwHDba04sAfinAB5P5zgiZUeZ8czo27vJcOVp0G0bOhYr0E4GrwDl3nrDrMKIgHCQwLtfCFUcS/dwrj4OXFfdOSXqc9YyuArAFwEk92G+IpZ+AO8xoy3g+F5P5K/7RGXsefDNmz+YMH7At0iBKxymWaR4DpiKAZ4MYCJyYEGqywYA9ADUDeIudugjRXzOAbX35UWPNzdX9mai0f8B3POGdO+wsVUAAAAASUVORK5CYII=",
+      "id": "official.lyricon",
+      "license": "Apache-2.0",
+      "platform": "android",
+      "readme": "# Lyricon 歌词连接\n\n将 Lyra 当前歌曲的主歌词、逐字时间、译文和注音发送给 Lyricon（词幕）。这是独立的 Lyra 插件，和 Flyme 状态栏歌词互不替代，不修改宿主 APK。\n\n## 使用\n\n1. 安装并按 Lyricon 官方指南激活词幕及其中心服务。\n2. 在 Lyra 插件市场安装本插件，然后播放有时间轴歌词的歌曲。\n3. 在词幕中配置歌词显示。没有歌词、停止或切歌等待时会清除上一首的内容。\n\n插件不自行绘制状态栏歌词、不联网获取歌词、不申请 Root 或悬浮窗权限。显示端所需的系统/LSPosed 配置由 Lyricon 自身负责。\n\nAndroid 8.1 或以上运行；Android 8.0 保持停用。支持当前 ABI 3 的 Lyra。连接断开后自动重试，中心服务重启后重新注册并补发当前歌曲。进度使用 Lyricon 的共享内存接口同步实际播放进度，跳转使用其 seek 接口，不依赖宿主持续绘制。\n\n## 与官方 Provider 模块的区别\n\n本插件加载在 Lyra 进程中，不是另一个 Android APK，因此不会给宿主 Manifest 添加 `lyricon_module` 元数据。当前 Lyricon 中心服务接受运行时 Binder 注册，元数据主要用于应用中的模块发现列表；本插件不会作为一个独立 APK 出现在该列表中。歌词由 Lyra 的真实包名和进程注册，不伪装其他应用。后续 Lyricon 若修改接入协议或增加 Manifest 强制校验，需要重新评估兼容性。\n\n当前已验证协议互通、连接恢复、资源清理和 Android 加载；实际 Lyricon 状态栏视觉仍由用户验收。\n\n## 开发\n\n- 官方项目：https://github.com/tomakino/lyricon\n- Provider 文档：https://tomakino.github.io/lyricon/zh-cn/developer/provider/quick-start\n- 构建：`plugins/lyricon/build.sh`\n- 设备协议测试：`plugins/lyricon/tests/device.sh <ADB序列号>`\n\n使用 Android SDK/NDK 的 Java、AIDL、Binder、SharedMemory、JSON 和 ZLIB 能力，不引入 Kotlin、AndroidX 或 Gradle。原生插件仅通过现有公共接口取得宿主数据；系统通信在独立线程进行。源代码、协议来源与许可证随包提供。\n",
+      "sha256": "72c59979efda115f678bd95f5d9e34495a46008039fde0478e7f3a13ccdb1acf",
+      "tags": "Lyricon 词幕 状态栏 歌词 逐字 译文 注音",
+      "title": "Lyricon 歌词连接",
+      "urls": [
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/lyricon-v1.0.0/official.lyricon-1.0.0-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.lyricon/1.0.0/official.lyricon-1.0.0-android-arm64-v8a.zip"
+      ],
+      "version": "1.0.0"
     },
     {
       "abi": 3,
