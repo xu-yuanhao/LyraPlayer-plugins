@@ -61,3 +61,7 @@ FFmpeg 1.4.5 使用未修改的 FFmpeg 上游实现，精简限于组件配置�
 `plugins/fonts` 将详细字体选择、导入、删除、字号和粗体设置外置。主程序默认扫描并自动选择字体、官方默认参数保持独立。运行 `plugins/fonts/build.sh` 构建，`plugins/fonts/tests/run.sh` 使用并列 native 工程的主机测试库验证真实配置和设置页路径。不会自动安装插件。
 
 公共设置页消息接口见 `sdk/include/plugin/settings_contracts.h`（fresh ID 26）和 `sdk/issued-settings-interface.json`。任意选中的服务均可提供此可选接口；宿主枚举端点绘制卡片、开关、滑块和确认框，不按插件名称分支。插件通过宿主同一配置接口读取默认值与写入参数。字体插件同时保留已公布的字体删除接口 ID 25。Android 平台契约 9 的公开方法表见 `sdk/android-platform-v9.json`，使用前必须精确握手。
+
+## Flyme 状态栏歌词
+
+`plugins/flyme-lyrics` 为可选状态栏歌词插件，使用 Flyme 官方通知 ticker 扩展与现有 ABI 3 歌词/播放接口，不修改宿主。支持的设备上安装启用即可，其他设备保持停用。构建运行 `plugins/flyme-lyrics/build.sh`；测试运行 `python3 plugins/flyme-lyrics/tests/run.py`。首版尚待 Flyme 真机视觉反馈。

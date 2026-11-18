@@ -1,0 +1,12 @@
+id = "official.flyme-lyrics"
+version = "1.0.0"
+abi = 3
+type = "statusbar-lyrics"
+entry = "plugin.so"
+title = "Flyme 状态栏歌词"
+author = "Xu YuanHao"
+author_url = "https://github.com/xu-yuanhao"
+homepage = "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/flyme-lyrics"
+license = "MIT"
+readme = "README.md"
+changelog = "CHANGELOG.md"
