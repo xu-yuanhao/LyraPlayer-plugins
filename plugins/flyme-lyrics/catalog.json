@@ -1,17 +1,17 @@
 {
   "id": "official.flyme-lyrics",
   "title": "Flyme 状态栏歌词",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "abi": 3,
   "platform": "android",
   "arch": "arm64-v8a",
   "capability": "statusbar-lyrics",
   "description": "将当前歌词显示在支持该功能的 Flyme 状态栏；无需 Root，其他系统自动保持停用。首版待 Flyme 真机反馈。",
   "tags": "Flyme 魅族 状态栏 歌词",
-  "package": "official.flyme-lyrics-1.0.0-android-arm64-v8a.zip",
+  "package": "official.flyme-lyrics-1.0.1-android-arm64-v8a.zip",
   "urls": [
-    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/flyme-lyrics-v1.0.0/official.flyme-lyrics-1.0.0-android-arm64-v8a.zip",
-    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.flyme-lyrics/1.0.0/official.flyme-lyrics-1.0.0-android-arm64-v8a.zip"
+    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/flyme-lyrics-v1.0.1/official.flyme-lyrics-1.0.1-android-arm64-v8a.zip",
+    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.flyme-lyrics/1.0.1/official.flyme-lyrics-1.0.1-android-arm64-v8a.zip"
   ],
   "author": "Xu YuanHao",
   "author_url": "https://github.com/xu-yuanhao",
@@ -19,5 +19,6 @@
   "license": "MIT",
   "readme": "README.md",
   "changelog": "CHANGELOG.md",
-  "entry": "plugin.so"
+  "entry": "plugin.so",
+  "icon": "icon.png"
 }

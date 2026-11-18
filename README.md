@@ -65,3 +65,9 @@ FFmpeg 1.4.5 使用未修改的 FFmpeg 上游实现，精简限于组件配置�
 ## Flyme 状态栏歌词
 
 `plugins/flyme-lyrics` 为可选状态栏歌词插件，使用 Flyme 官方通知 ticker 扩展与现有 ABI 3 歌词/播放接口，不修改宿主。支持的设备上安装启用即可，其他设备保持停用。构建运行 `plugins/flyme-lyrics/build.sh`；测试运行 `python3 plugins/flyme-lyrics/tests/run.py`。首版尚待 Flyme 真机视觉反馈。
+
+## Lyricon 歌词连接
+
+`plugins/lyricon` 是独立的 Lyricon（词幕）提供端插件，使用已有公共接口导出主歌词、逐字时间、译文和注音。运行时 Binder 注册无需修改宿主；Android 8.1 起支持，Android 8.0 保持停用。构建及端到端测试见插件 README。
+
+SuperLyric 插件暂缓：当前上游服务端 AccessPolicy 强制校验宿主 Manifest 的 API 声明。保持宿主完全不变时不能满足这一要求，未将不可用的占位插件发布到目录。预备图标保存在 `assets/icons`。

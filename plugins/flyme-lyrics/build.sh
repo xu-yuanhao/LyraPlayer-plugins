@@ -16,15 +16,15 @@ out=Path(sys.argv[1]);data=(out/'dex/classes.dex').read_bytes()
 PY
 "$tools/aarch64-linux-android26-clang++" -std=c++17 -Oz -flto -shared -static-libstdc++ -fPIC -fno-exceptions -fno-rtti -fno-stack-protector -fvisibility=hidden -ffunction-sections -fdata-sections -I "$root/sdk/include" -I "$out" src/plugin.cpp -landroid -Wl,--gc-sections -Wl,--icf=all -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384 -o "$out/plugin.so"
 "$tools/llvm-strip" --strip-unneeded "$out/plugin.so"
-cp manifest.toml README.md CHANGELOG.md "$out/"
+cp manifest.toml README.md CHANGELOG.md icon.png "$out/"
 cp catalog.json "$out/metadata.json"
 cp ../netease/licenses/MIT.txt "$out/LICENSE.txt"
 python3 - "$root" <<'PY'
 from pathlib import Path
 from zipfile import ZipFile,ZIP_DEFLATED
 import sys
-root=Path(sys.argv[1]);out=root/'dist/official.flyme-lyrics-1.0.0-android-arm64-v8a.zip'
+root=Path(sys.argv[1]);out=root/'dist/official.flyme-lyrics-1.0.1-android-arm64-v8a.zip'
 with ZipFile(out,'w',ZIP_DEFLATED,compresslevel=9) as z:
- for n in ['manifest.toml','plugin.so','LICENSE.txt','metadata.json','README.md','CHANGELOG.md']:z.write(root/'dist/flyme-lyrics'/n,n)
+ for n in ['manifest.toml','plugin.so','LICENSE.txt','metadata.json','README.md','CHANGELOG.md','icon.png']:z.write(root/'dist/flyme-lyrics'/n,n)
 print(out, out.stat().st_size, 'bytes')
 PY

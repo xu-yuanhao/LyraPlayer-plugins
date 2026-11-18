@@ -1,0 +1,13 @@
+id = "official.lyricon"
+version = "1.0.0"
+abi = 3
+type = "lyricon-provider"
+entry = "plugin.so"
+title = "Lyricon 歌词连接"
+author = "Xu YuanHao"
+author_url = "https://github.com/xu-yuanhao"
+homepage = "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/lyricon"
+license = "Apache-2.0"
+readme = "README.md"
+changelog = "CHANGELOG.md"
+icon = "icon.png"

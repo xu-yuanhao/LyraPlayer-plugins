@@ -1,0 +1,24 @@
+{
+  "id": "official.lyricon",
+  "title": "Lyricon 歌词连接",
+  "version": "1.0.0",
+  "abi": 3,
+  "platform": "android",
+  "arch": "arm64-v8a",
+  "capability": "lyricon-provider",
+  "description": "向 Lyricon（词幕）发送主歌词、逐字时间、译文和注音；需要 Android 8.1 及以上与已激活的词幕中心服务。",
+  "tags": "Lyricon 词幕 状态栏 歌词 逐字 译文 注音",
+  "package": "official.lyricon-1.0.0-android-arm64-v8a.zip",
+  "urls": [
+    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/lyricon-v1.0.0/official.lyricon-1.0.0-android-arm64-v8a.zip",
+    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.lyricon/1.0.0/official.lyricon-1.0.0-android-arm64-v8a.zip"
+  ],
+  "author": "Xu YuanHao",
+  "author_url": "https://github.com/xu-yuanhao",
+  "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/lyricon",
+  "license": "Apache-2.0",
+  "readme": "README.md",
+  "changelog": "CHANGELOG.md",
+  "entry": "plugin.so",
+  "icon": "icon.png"
+}

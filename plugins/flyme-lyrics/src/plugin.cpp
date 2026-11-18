@@ -146,6 +146,6 @@ int init(const LyraHostV3 *h) {
 extern "C" __attribute__((visibility("default"))) int lyra_plugin_init(const LyraHostV3 *h,LyraPluginV3 *out) {
     if(!h || h->size!=sizeof(*h) || h->abi!=LYRA_PLUGIN_ABI || !h->query_interface || !out)return -1;
     *out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;
-    out->id="official.flyme-lyrics";out->kind="statusbar-lyrics";out->version="1.0.0";
+    out->id="official.flyme-lyrics";out->kind="statusbar-lyrics";out->version="1.0.1";
     out->init=init;out->shutdown=[](const LyraHostV3 *){instance.reset();};return 0;
 }
