@@ -1,0 +1,22 @@
+{
+  "id": "chun.lyra.sync",
+  "title": "Lyra Player 同步插件",
+  "version": "0.3.4",
+  "abi": 3,
+  "platform": "android",
+  "arch": "arm64-v8a",
+  "tags": "sync transfer lan music 同步 传输",
+  "author": "chun",
+  "license": "MIT",
+  "entry": "plugin.so",
+  "capability": "frame",
+  "description": "Android 设备之间通过局域网传输音乐。支持配对、分块校验与续传。",
+  "package": "chun.lyra.sync-0.3.4-android-arm64-v8a.zip",
+  "urls": [],
+  "author_url": "https://github.com/chun-chun592",
+  "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/lyra-sync",
+  "icon": "icon.png",
+  "readme": "README.md",
+  "changelog": "CHANGELOG.md",
+  "config": ""
+}
