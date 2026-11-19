@@ -42,7 +42,34 @@
     return allowed[name];
   };
   const console = Object.freeze({ log() {}, warn() {}, error() {}, info() {}, debug() {}, group() {}, groupCollapsed() {}, groupEnd() {} });
-  globalThis.__load = code => {
+  const operation = () => ({ id: "lyra", deadlineAt: Date.now()+4500,
+    signal: Object.freeze({ aborted: false, addEventListener() {}, removeEventListener() {} }) });
+  const ceru = async (source) => {
+    const manifest = source.manifest;
+    if (source.package != null || manifest.signature || manifest.delivery || manifest.template)
+      return { format: "ceru-package" };
+    if (manifest.engines?.logicRuntime !== "ceru-js@1" || typeof source.activate !== "function")
+      throw new Error("Unsupported Ceru activation");
+    const providers = new Map();
+    const declared = (manifest.contributes?.providers ?? []).filter(entry => entry.connectionMode == null || entry.connectionMode === "none");
+    const ctx = Object.freeze({
+      plugin: Object.freeze({ id:manifest.id, version:manifest.version, manifest }),
+      config: Object.freeze({ async get() { return Object.freeze({}); } }),
+      log: console,
+      providers: Object.freeze({
+        register(id, implementation) {
+          if (!declared.some(entry => entry.id === id) || providers.has(id)) throw new Error("Invalid provider registration");
+          providers.set(id,implementation.tracks ?? implementation);
+          return { dispose() { providers.delete(id); } };
+        },
+      }),
+    });
+    await source.activate(ctx);
+    if (![...providers.values()].some(track => typeof track.search === "function" || typeof track.resolve === "function"))
+      throw new Error("No compatible Ceru track provider");
+    return { format:"ceru", manifest, providers, declared };
+  };
+  globalThis.__load = async code => {
     let listener, sources;
     const events = { request: "request", inited: "inited", updateAlert: "updateAlert" };
     const lx = {
@@ -61,6 +88,7 @@
     const module = { exports: {} };
     new Function("module", "exports", "require", "console", code)(module, module.exports, require, console);
     const source = module.exports?.default ?? module.exports;
+    if (source?.manifest?.manifestVersion === 2) return ceru(source);
     if (typeof listener === "function" && sources && typeof sources === "object")
       return { format: "lx", sources, listener };
     if (!source || typeof source.platform !== "string" ||
@@ -69,6 +97,14 @@
     return { format: "musicfree", source };
   };
   globalThis.__metadata = plugin => {
+    if (plugin.format === "ceru-package") return { format:"ceru-package" };
+    if (plugin.format === "ceru") {
+      const capabilities = [["search","搜索"],["resolve","播放"]]
+        .filter(([method]) => [...plugin.providers.values()].some(provider => typeof provider[method] === "function"))
+        .map(([, label]) => label);
+      return { format:"ceru", name:plugin.manifest.name, version:plugin.manifest.version,
+        description:plugin.manifest.description, capabilities };
+    }
     if (plugin.format === "lx") return { format: "lx", capabilities: ["播放解析", "需要搭配可搜索的音源"], platforms: Object.keys(plugin.sources) };
     const source = plugin.source;
     const capabilities = [["search", "搜索"], ["getMediaSource", "播放"], ["getTopLists", "歌单"], ["getLyric", "歌词"]]
@@ -77,6 +113,37 @@
       description: source.description, update: source.srcUrl, icon: source.icon, capabilities };
   };
   globalThis.__invoke = async (plugin, method, args) => {
+    if (plugin.format === "ceru") {
+      if (method === "search") {
+        const hits = [];
+        for (const [providerId, provider] of plugin.providers) {
+          if (typeof provider.search !== "function") continue;
+          try {
+            const result = await provider.search({ query:args[0], kinds:["track"], filters:{}, limit:50 },operation());
+            for (const row of result?.items ?? []) {
+              if (hits.length >= 100) break;
+              const { ref, metadata = {} } = row;
+              if (ref?.providerId !== providerId || ref.kind !== "track" || typeof ref.id !== "string" ||
+                  ref.connectionId != null || (ref.pluginId != null && ref.pluginId !== plugin.manifest.id)) continue;
+              hits.push({ id:ref.id, title:row.title, artist:metadata.artists?.join(" / ") ?? row.subtitle,
+                album:metadata.album?.title, artwork:metadata.artworkUrl,
+                duration:(row.durationMs ?? metadata.durationMs ?? 0)/1000, ceruRef:ref });
+            }
+          } catch {}
+        }
+        return { data:hits };
+      }
+      if (method === "resolve") {
+        const ref = args[1]?.ceruRef;
+        const provider = plugin.providers.get(ref?.providerId);
+        if (!provider?.resolve || ref.kind !== "track" || ref.connectionId != null ||
+            (ref.pluginId != null && ref.pluginId !== plugin.manifest.id)) return null;
+        const quality = plugin.declared.find(entry => entry.id === ref.providerId)?.qualities?.[0];
+        const resolved = await provider.resolve(ref,quality,operation());
+        return resolved?.ok === true ? { url:resolved.url, headers:resolved.requestHeaders } : null;
+      }
+      return null;
+    }
     if (plugin.format === "lx") {
       if (method !== "resolve") return null;
       const [platform, song] = args;

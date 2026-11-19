@@ -35,6 +35,32 @@ int main(){
     )";
     assert(Json::parse(sources::evaluate(lx,"metadata","[]"))["format"]=="lx");
     assert(Json::parse(sources::evaluate(lx,"resolve",R"(["wy",{"id":3}])"))["url"]=="https://fixture.test/wy/3");
+    const char *ceru=R"(
+      exports.manifest = {manifestVersion:2, id:"fixture.ceru", name:"Fixture",version:"1.0",
+        engines:{logicRuntime:"ceru-js@1"}, contributes:{providers:[{id:"local",qualities:["low"]}]}};
+      exports.activate = async (ctx) => {
+        await Promise.resolve();
+        ctx.providers.register("local",{tracks:{
+          async search(request, op){
+            if(!request.kinds.includes("track") || op.signal.aborted) throw Error("Invalid request");
+            return {items:[{ref:{providerId:"local",kind:"track",id:"42",data:{ticket:"fixture"}},
+              title:request.query, durationMs:42000, metadata:{artists:["Artist"],album:{title:"Album"}}}]};
+          },
+          async resolve(ref, quality){
+            if(quality !== "low" || ref.data.ticket !== "fixture") return {ok:false};
+            return {ok:true,url:"https://fixture.test/track",requestHeaders:{"X-Fixture":"yes"}};
+          }
+        }});
+      };
+    )";
+    assert(Json::parse(sources::evaluate(ceru,"metadata","[]"))["format"]=="ceru");
+    auto ceru_search=Json::parse(sources::evaluate(ceru,"search",R"(["Track"])"));
+    auto track=ceru_search["data"][0];
+    assert(track["title"]=="Track" && track["artist"]=="Artist" && track["duration"]==42);
+    auto ceru_play=Json::parse(sources::evaluate(ceru,"resolve",Json::array({"",track}).dump()));
+    assert(ceru_play["url"]=="https://fixture.test/track" && ceru_play["headers"]["X-Fixture"]=="yes");
+    auto signed_ceru=std::string(ceru)+"\nexports.package={signature:{}};";
+    assert(Json::parse(sources::evaluate(signed_ceru,"metadata","[]"))["format"]=="ceru-package");
     assert(sources::evaluate("require('fs')","metadata","[]").empty());
     assert(sources::evaluate("for(;;){}","metadata","[]").empty());
 }

@@ -124,6 +124,8 @@ void add_track(std::vector<Row> &out,const Source &source,const Json &song){
         if(key.size()<=64 && (value.is_number() || value.is_boolean() ||
             (value.is_string() && value.get_ref<const std::string &>().size()<=256)))input[key]=value;
     }
+    if(str(source.metadata,"format")=="ceru" && song.contains("ceruRef") && song["ceruRef"].is_object())
+        input["ceruRef"]=song["ceruRef"];
     if(str(input,"platform").empty())input["platform"]=display(source);
     auto uid=encode_id(Json::array({source.id,input}));
     if(uid.size()>1800 || std::any_of(out.begin(),out.end(),[&](const Row &row){return row.uid==uid;}))return;
@@ -175,7 +177,8 @@ void import_script(std::string data,std::string url,std::string update){
     const bool ceru=header.find("exports.manifest")!=header.npos &&
                     header.find("manifestVersion")!=header.npos &&
                     header.find("ceru-js@1")!=header.npos;
-    auto metadata=ceru?Json{}:parse(evaluate(data,"metadata","[]",network));
+    const bool issued=ceru && data.find("exports.package")!=std::string::npos;
+    auto metadata=issued?Json{}:parse(evaluate(data,"metadata","[]",network));
     if(metadata.is_object() && str(metadata,"format")=="lx")
         for(const char *key:{"name","version","description"})metadata[key]=meta_header(data,key);
     if(metadata.is_object()){
@@ -186,7 +189,8 @@ void import_script(std::string data,std::string url,std::string update){
     bool changed=false;
     {
         std::lock_guard guard(lock);
-        if(ceru)notice="这是澜音 Ceru Music v2 音源，当前版本尚不支持";
+        if(issued || str(metadata,"format")=="ceru-package")notice="暂不支持澜音 v2 发行包";
+        else if(ceru && !metadata.is_object())notice="澜音音源需要当前未提供的运行能力";
         else if(!metadata.is_object())notice="无法识别音源或脚本缺少依赖";
         else if(update.empty() && sources_list.size()>=source_limit)notice="音源数量已达上限";
         else {

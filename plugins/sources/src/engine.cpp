@@ -13,6 +13,16 @@ struct Run {
 int interrupt(JSRuntime *,void *opaque) {
     return Clock::now() >= static_cast<const Run *>(opaque)->deadline;
 }
+JSValue settle(JSContext *context,JSRuntime *runtime,JSValue promise,const Run &run) {
+    if (JS_IsException(promise)) return promise;
+    JSContext *job=nullptr;
+    while (JS_PromiseState(context,promise)==JS_PROMISE_PENDING && Clock::now()<run.deadline)
+        if (JS_ExecutePendingJob(runtime,&job)<=0) break;
+    auto value=JS_PromiseState(context,promise)==JS_PROMISE_FULFILLED
+        ? JS_PromiseResult(context,promise) : JS_EXCEPTION;
+    JS_FreeValue(context,promise);
+    return value;
+}
 JSValue fetch(JSContext *context,JSValueConst,int count,JSValueConst *args) {
     auto &run = *static_cast<Run *>(JS_GetContextOpaque(context));
     if (count != 4 || !run.transport || Clock::now() >= run.deadline)
@@ -48,22 +58,14 @@ std::string evaluate(std::string_view script,std::string_view operation,
         if (!JS_IsException(initialized)) {
             auto load=JS_GetPropertyStr(context,global,"__load");
             auto code=JS_NewStringLen(context,script.data(),script.size());
-            auto plugin=JS_Call(context,load,JS_UNDEFINED,1,&code);
+            auto plugin=settle(context,runtime,JS_Call(context,load,JS_UNDEFINED,1,&code),run);
             if (!JS_IsException(plugin)) {
                 const bool metadata=operation=="metadata";
                 auto function=JS_GetPropertyStr(context,global,metadata?"__metadata":"__invoke");
                 JSValue args[]={plugin,JS_NewStringLen(context,operation.data(),operation.size()),
                     JS_ParseJSON(context,arguments.data(),arguments.size(),"args")};
                 auto result=JS_Call(context,function,JS_UNDEFINED,metadata?1:3,args);
-                if (!metadata && !JS_IsException(result)) {
-                    JSContext *job=nullptr;
-                    while (JS_PromiseState(context,result)==JS_PROMISE_PENDING && Clock::now()<run.deadline)
-                        if (JS_ExecutePendingJob(runtime,&job)<=0) break;
-                    auto next=JS_PromiseState(context,result)==JS_PROMISE_FULFILLED
-                        ? JS_PromiseResult(context,result) : JS_UNDEFINED;
-                    JS_FreeValue(context,result);
-                    result=next;
-                }
+                if (!metadata) result=settle(context,runtime,result,run);
                 auto json=JS_JSONStringify(context,result,JS_UNDEFINED,JS_UNDEFINED);
                 if (JS_IsString(json)) {
                     size_t size=0;
