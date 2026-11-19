@@ -404,7 +404,6 @@ int settings(void *,const LyraMessageV3 *message,LyraReplyV3 *reply){
         else{
             auto &s=sources_list[size_t(row-1)];
             out.string(LYRA_SETTINGS_TITLE,display(s));
-            out.string(LYRA_SETTINGS_DETAIL,s.enabled?"已启用":"已停用");
             out.string(LYRA_SETTINGS_LEADING_TEXT,initial(display(s)));
             out.image(str(s.metadata,"tile"));
             out.string(LYRA_SETTINGS_BUTTON,"删除");
@@ -480,6 +479,6 @@ void stop(const LyraHostV3 *){
 extern "C" __attribute__((visibility("default"))) int lyra_plugin_init(const LyraHostV3 *host,LyraPluginV3 *out){
     if(!host || host->size!=sizeof(*host) || host->abi!=LYRA_PLUGIN_ABI || !out)return -1;
     *out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id=id;out->kind=kind;
-    out->version="1.0.0";out->init=start;out->shutdown=stop;out->query_interface=query;
+    out->version="1.0.1";out->init=start;out->shutdown=stop;out->query_interface=query;
     return 0;
 }

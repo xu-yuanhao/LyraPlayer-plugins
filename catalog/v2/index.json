@@ -164,9 +164,9 @@
       "abi": 3,
       "arch": "arm64-v8a",
       "author": "Xu YuanHao",
-      "bytes": 548277,
+      "bytes": 548319,
       "capability": "media.sources",
-      "changelog": "# 1.0.0\n\n从链接或本地文件导入音源，接入搜索、播放及「我的」集合。\n",
+      "changelog": "# 1.0.1\n\n精简媒体库音源列表。启用开关保留在音源详情。\n\n# 1.0.0\n\n从链接或本地文件导入音源，接入搜索、播放及「我的」集合。\n",
       "config": "",
       "description": "从链接或文件导入音源，在 Lyra Player 搜索并播放。",
       "entry": "plugin.so",
@@ -175,15 +175,15 @@
       "id": "official.sources",
       "platform": "android",
       "readme": "# 导入音源\n\n在 Lyra Player 的「媒体库」点击「导入音源」。粘贴 HTTPS 脚本链接，或点击「选择文件」选择 UTF-8 JavaScript 文件。\n\n- MusicFree CommonJS 脚本可提供曲目搜索、播放地址和榜单。支持直接 HTTP 请求及 `axios`、`qs` 适配模块。\n- LX Music 自定义源可作为具有相应平台标识的歌曲的播放候选。\n- 支持的榜单会显示在「我的」。详情页可启用、停用或按脚本链接更新音源。\n- 网络接口使用 HTTPS。依赖其他模块、私有运行时或未实现能力的脚本可能无法加载。\n\n仅导入你信任的脚本。插件在受限 QuickJS 环境运行脚本，并允许脚本发出 HTTPS 请求。插件包不包含音源脚本。\n\n[MusicFree 协议](https://musicfree.catcat.work/plugin/protocol.html) · [LX Music 脚本说明](https://lxmusic.toside.cn/desktop/custom-source)\n",
-      "sha256": "3b60319c559ee6d45fb850bec557bd31b96414ee94aec0d5d454098ef22e08a2",
+      "sha256": "b45c5a9b14c506f8fd227e4388206424ca274e9633cc548bf52e11516c237d30",
       "tags": "MusicFree LX Music 音源 搜索 歌单",
       "title": "导入音源",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/sources-v1.0.0/official.sources-1.0.0-android-arm64-v8a.zip",
-        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.sources/1.0.0/official.sources-1.0.0-android-arm64-v8a.zip",
-        "https://gitee.com/please-call-me-xu-zong/LyraPlayer-plugins/releases/download/sources-v1.0.0/official.sources-1.0.0-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/sources-v1.0.1/official.sources-1.0.1-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.sources/1.0.1/official.sources-1.0.1-android-arm64-v8a.zip",
+        "https://gitee.com/please-call-me-xu-zong/LyraPlayer-plugins/releases/download/sources-v1.0.1/official.sources-1.0.1-android-arm64-v8a.zip"
       ],
-      "version": "1.0.0"
+      "version": "1.0.1"
     },
     {
       "abi": 3,
