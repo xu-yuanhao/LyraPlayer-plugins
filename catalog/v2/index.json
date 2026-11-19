@@ -153,6 +153,31 @@
         "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.netease/1.1.0/official.netease-1.1.0-android-arm64-v8a.zip"
       ],
       "version": "1.1.0"
+    },
+    {
+      "abi": 3,
+      "arch": "arm64-v8a",
+      "author": "Xu YuanHao",
+      "author_url": "https://github.com/xu-yuanhao",
+      "bytes": 86456,
+      "capability": "superlyric-provider",
+      "changelog": "# 1.0.0\n\n- 新增独立 SuperLyric 歌词连接插件，支持逐字歌词、译文和注音。\n",
+      "description": "通过 SuperLyric 4.x 发送完整歌词、逐字时间、译文和注音；需要已激活的 SuperLyric 服务与声明兼容的 Lyra 新版本。",
+      "entry": "plugin.so",
+      "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/superlyric",
+      "icon": "data:image/png;base64,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",
+      "id": "official.superlyric",
+      "license": "MIT",
+      "platform": "android",
+      "readme": "# SuperLyric 歌词连接\n\n将 Lyra 当前歌曲的主歌词、逐字时间、译文和注音发布到 SuperLyric 4.x 服务。它是独立插件，与 Flyme、Lyricon 插件互不替代，不内置歌词显示端。\n\n需要已安装并激活 SuperLyric，以及带有 `superlyricapi` API 声明的新版 Lyra。旧版 Lyra 没有该声明，服务端会拒绝；只更新插件无法补齐宿主声明。\n\n安装启用后开始播放即可。整首歌词按歌曲/内容变化发送，不逐帧重复发送。暂停、恢复和拖动由 SuperLyric 按系统 MediaSession 同步；停止或无歌词时清除，服务重启后重新发布。通信在插件工作线程，不阻塞宿主绘制。\n\n仅支持 4.x 的 `super_lyric.v4` 协议，旧 3.x 服务不接入。服务不可用或系统限制服务查询时自动等待重试，不绕过系统限制。不获取网络歌词、不写歌词日志。\n\n公开接口：https://github.com/HChenX/SuperLyricApi\n\n构建：`plugins/superlyric/build.sh`。使用现有 Lyra ABI 3、系统 Binder 和插件内嵌 DEX；宿主只需 Manifest API 标记，无额外播放状态或依赖库。\n\n验证范围：已用 Android 设备运行发布插件的真实内嵌 DEX/Binder 协议测试；未安装 SuperLyric 的设备不能验收最终状态栏显示，需在实际模块环境中确认。\n",
+      "sha256": "b004edb36f491655f5724b71f893f1d0c8bdc0490679863603ac3194e5d9400a",
+      "tags": "SuperLyric 歌词 状态栏 逐字 译文 注音",
+      "title": "SuperLyric 歌词连接",
+      "urls": [
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/superlyric-v1.0.0/official.superlyric-1.0.0-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.superlyric/1.0.0/official.superlyric-1.0.0-android-arm64-v8a.zip"
+      ],
+      "version": "1.0.0"
     }
   ],
   "schema": 1
