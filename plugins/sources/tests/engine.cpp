@@ -26,7 +26,11 @@ int main(){
     assert(collection[0]["data"][0]["title"]=="Test list");
     const char *lx=R"(
       const {on,send,EVENT_NAMES}=globalThis.lx;
-      on(EVENT_NAMES.request,async ({source,info}) => "https://fixture.test/"+source+"/"+info.musicInfo.id);
+      on(EVENT_NAMES.request,async ({source,info}) => {
+        console.group("resolve");
+        console.groupEnd();
+        return "https://fixture.test/"+source+"/"+info.musicInfo.id;
+      });
       send(EVENT_NAMES.inited,{sources:{wy:{actions:["musicUrl"],qualitys:["128k"]}}});
     )";
     assert(Json::parse(sources::evaluate(lx,"metadata","[]"))["format"]=="lx");

@@ -41,7 +41,7 @@
     if (!Object.hasOwn(allowed, name)) throw new Error("Unsupported module: " + name);
     return allowed[name];
   };
-  const console = Object.freeze({ log() {}, warn() {}, error() {}, info() {}, debug() {} });
+  const console = Object.freeze({ log() {}, warn() {}, error() {}, info() {}, debug() {}, group() {}, groupCollapsed() {}, groupEnd() {} });
   globalThis.__load = code => {
     let listener, sources;
     const events = { request: "request", inited: "inited", updateAlert: "updateAlert" };
@@ -69,7 +69,7 @@
     return { format: "musicfree", source };
   };
   globalThis.__metadata = plugin => {
-    if (plugin.format === "lx") return { format: "lx", capabilities: ["播放"], platforms: Object.keys(plugin.sources) };
+    if (plugin.format === "lx") return { format: "lx", capabilities: ["播放解析", "需要搭配可搜索的音源"], platforms: Object.keys(plugin.sources) };
     const source = plugin.source;
     const capabilities = [["search", "搜索"], ["getMediaSource", "播放"], ["getTopLists", "歌单"], ["getLyric", "歌词"]]
       .filter(([method]) => typeof source[method] === "function").map(([, label]) => label);

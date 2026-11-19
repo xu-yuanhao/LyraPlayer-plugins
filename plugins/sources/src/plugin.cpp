@@ -124,6 +124,7 @@ void add_track(std::vector<Row> &out,const Source &source,const Json &song){
         if(key.size()<=64 && (value.is_number() || value.is_boolean() ||
             (value.is_string() && value.get_ref<const std::string &>().size()<=256)))input[key]=value;
     }
+    if(str(input,"platform").empty())input["platform"]=display(source);
     auto uid=encode_id(Json::array({source.id,input}));
     if(uid.size()>1800 || std::any_of(out.begin(),out.end(),[&](const Row &row){return row.uid==uid;}))return;
     int64_t duration=0;
@@ -170,7 +171,11 @@ void import_script(std::string data,std::string url,std::string update){
     if(data.empty() && !url.empty()){
         auto result=parse(network(url,"GET","{}",""));data=str(result,"body");
     }
-    auto metadata=parse(evaluate(data,"metadata","[]",network));
+    const std::string_view header(data.data(),std::min(data.size(),size_t(4096)));
+    const bool ceru=header.find("exports.manifest")!=header.npos &&
+                    header.find("manifestVersion")!=header.npos &&
+                    header.find("ceru-js@1")!=header.npos;
+    auto metadata=ceru?Json{}:parse(evaluate(data,"metadata","[]",network));
     if(metadata.is_object() && str(metadata,"format")=="lx")
         for(const char *key:{"name","version","description"})metadata[key]=meta_header(data,key);
     if(metadata.is_object()){
@@ -181,7 +186,8 @@ void import_script(std::string data,std::string url,std::string update){
     bool changed=false;
     {
         std::lock_guard guard(lock);
-        if(!metadata.is_object())notice="无法识别音源或脚本缺少依赖";
+        if(ceru)notice="这是澜音 Ceru Music v2 音源，当前版本尚不支持";
+        else if(!metadata.is_object())notice="无法识别音源或脚本缺少依赖";
         else if(update.empty() && sources_list.size()>=source_limit)notice="音源数量已达上限";
         else {
             auto old=std::find_if(sources_list.begin(),sources_list.end(),[&](const Source &s){
@@ -206,7 +212,7 @@ void import_script(std::string data,std::string url,std::string update){
 std::string lx_platform(const Json &song){
     auto value=str(song,"source");if(value.empty())value=str(song,"platform");
     for(const auto *name:{"kw","kg","tx","wy","mg","local"})if(value==name)return value;
-    if(value=="网易云" || value=="网易云音乐")return "wy";
+    if(value=="网易云" || value=="网易云音乐" || value=="网易云免费音乐")return "wy";
     if(value=="QQ音乐")return "tx";
     if(value=="酷狗音乐")return "kg";
     if(value=="酷我音乐")return "kw";
@@ -231,6 +237,8 @@ void resolve(uint64_t request,LyraMediaSinkV3 sink,uint32_t operation,const std:
             std::string url,headers;
             try {
                 auto song=uid[1];
+                if(lx && !song.contains("songmid") && !song.contains("hash"))
+                    song[platform=="kg"?"hash":"songmid"]=str(song,"id");
                 if(!primary && !lx){
                     auto found=invoke(source,"search",Json::array({str(song,"title")}));
                     if(found.is_object() && found.contains("data"))found=Json(found["data"]);
@@ -391,7 +399,9 @@ int settings(void *,const LyraMessageV3 *message,LyraReplyV3 *reply){
             if(row==0)out.number(LYRA_SETTINGS_FLAGS,LYRA_SETTINGS_TOGGLE|(active->enabled?LYRA_SETTINGS_CHECKED:0));
             if(row==1)out.string(LYRA_SETTINGS_DETAIL,str(active->metadata,"version"));
             if(row==2)out.string(LYRA_SETTINGS_DETAIL,str(active->metadata,"description"));
-            if(row==3 && active->metadata.contains("capabilities")){
+            if(row==3 && str(active->metadata,"format")=="lx")
+                out.string(LYRA_SETTINGS_DETAIL,"播放解析 · 需要搭配可搜索的音源");
+            else if(row==3 && active->metadata.contains("capabilities")){
                 std::string label;
                 for(const auto &capability:active->metadata["capabilities"]){
                     if(!capability.is_string())continue;
@@ -479,6 +489,6 @@ void stop(const LyraHostV3 *){
 extern "C" __attribute__((visibility("default"))) int lyra_plugin_init(const LyraHostV3 *host,LyraPluginV3 *out){
     if(!host || host->size!=sizeof(*host) || host->abi!=LYRA_PLUGIN_ABI || !out)return -1;
     *out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id=id;out->kind=kind;
-    out->version="1.0.1";out->init=start;out->shutdown=stop;out->query_interface=query;
+    out->version="1.0.2";out->init=start;out->shutdown=stop;out->query_interface=query;
     return 0;
 }

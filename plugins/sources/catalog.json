@@ -1,18 +1,18 @@
 {
   "id": "official.sources",
   "title": "导入音源",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "abi": 3,
   "platform": "android",
   "arch": "arm64-v8a",
   "capability": "media.sources",
   "description": "从链接或文件导入音源，在 Lyra Player 搜索并播放。",
   "tags": "MusicFree LX Music 音源 搜索 歌单",
-  "package": "official.sources-1.0.1-android-arm64-v8a.zip",
+  "package": "official.sources-1.0.2-android-arm64-v8a.zip",
   "urls": [
-    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/sources-v1.0.1/official.sources-1.0.1-android-arm64-v8a.zip",
-    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.sources/1.0.1/official.sources-1.0.1-android-arm64-v8a.zip",
-    "https://gitee.com/please-call-me-xu-zong/LyraPlayer-plugins/releases/download/sources-v1.0.1/official.sources-1.0.1-android-arm64-v8a.zip"
+    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/sources-v1.0.2/official.sources-1.0.2-android-arm64-v8a.zip",
+    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.sources/1.0.2/official.sources-1.0.2-android-arm64-v8a.zip",
+    "https://gitee.com/please-call-me-xu-zong/LyraPlayer-plugins/releases/download/sources-v1.0.2/official.sources-1.0.2-android-arm64-v8a.zip"
   ],
   "author": "Xu YuanHao",
   "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/sources",
