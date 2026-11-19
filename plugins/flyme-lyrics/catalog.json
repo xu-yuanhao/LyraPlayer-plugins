@@ -11,7 +11,8 @@
   "package": "official.flyme-lyrics-1.0.1-android-arm64-v8a.zip",
   "urls": [
     "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/flyme-lyrics-v1.0.1/official.flyme-lyrics-1.0.1-android-arm64-v8a.zip",
-    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.flyme-lyrics/1.0.1/official.flyme-lyrics-1.0.1-android-arm64-v8a.zip"
+    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.flyme-lyrics/1.0.1/official.flyme-lyrics-1.0.1-android-arm64-v8a.zip",
+    "https://gitee.com/please-call-me-xu-zong/LyraPlayer-plugins/releases/download/flyme-lyrics-v1.0.1/official.flyme-lyrics-1.0.1-android-arm64-v8a.zip"
   ],
   "author": "Xu YuanHao",
   "author_url": "https://github.com/xu-yuanhao",
