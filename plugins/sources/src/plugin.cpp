@@ -493,6 +493,6 @@ void stop(const LyraHostV3 *){
 extern "C" __attribute__((visibility("default"))) int lyra_plugin_init(const LyraHostV3 *host,LyraPluginV3 *out){
     if(!host || host->size!=sizeof(*host) || host->abi!=LYRA_PLUGIN_ABI || !out)return -1;
     *out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id=id;out->kind=kind;
-    out->version="1.0.2";out->init=start;out->shutdown=stop;out->query_interface=query;
+    out->version="1.0.3";out->init=start;out->shutdown=stop;out->query_interface=query;
     return 0;
 }

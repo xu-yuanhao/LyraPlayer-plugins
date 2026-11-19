@@ -1,5 +1,5 @@
 id = "official.sources"
-version = "1.0.2"
+version = "1.0.3"
 abi = 3
 type = "media.sources"
 entry = "plugin.so"
