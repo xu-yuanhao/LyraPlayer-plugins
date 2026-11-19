@@ -22,7 +22,7 @@ public final class Endpoint {
 
     public Endpoint(Context source) {
         Context app=source.getApplicationContext();Context context=app==null?source:app;
-        
+
         worker=Executors.newSingleThreadScheduledExecutor(r->{Thread t=new Thread(r,"LyraSuperLyric");t.setDaemon(true);return t;});
         protocol=new Protocol(context,worker);
         worker.scheduleWithFixedDelay(this::pump,0,1000,TimeUnit.MILLISECONDS);
