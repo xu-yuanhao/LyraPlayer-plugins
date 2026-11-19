@@ -1,0 +1,11 @@
+id = "official.sources"
+version = "1.0.0"
+abi = 3
+type = "media.sources"
+entry = "plugin.so"
+title = "导入音源"
+author = "Xu YuanHao"
+homepage = "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/sources"
+icon = "icon.png"
+readme = "README.md"
+changelog = "CHANGELOG.md"
