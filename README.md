@@ -70,4 +70,6 @@ FFmpeg 1.4.5 使用未修改的 FFmpeg 上游实现，精简限于组件配置�
 
 `plugins/lyricon` 是独立的 Lyricon（词幕）提供端插件，使用已有公共接口导出主歌词、逐字时间、译文和注音。运行时 Binder 注册无需修改宿主；Android 8.1 起支持，Android 8.0 保持停用。构建及端到端测试见插件 README。
 
-SuperLyric 插件暂缓：当前上游服务端 AccessPolicy 强制校验宿主 Manifest 的 API 声明。保持宿主完全不变时不能满足这一要求，未将不可用的占位插件发布到目录。预备图标保存在 `assets/icons`。
+## SuperLyric 歌词连接
+
+`plugins/superlyric` 为独立的 SuperLyric 4.x 发布端插件，使用整首歌词、逐字时间、译文和注音。需要宿主 Manifest 声明 SuperLyric API 4.0，并已激活 SuperLyric 服务；旧宿主安装插件也不能补齐声明。只补充宿主 API 声明，传输代码和图标仍位于外部插件。构建和测试见插件目录。

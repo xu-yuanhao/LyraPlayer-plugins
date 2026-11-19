@@ -1,0 +1,13 @@
+id = "official.superlyric"
+version = "1.0.0"
+abi = 3
+type = "superlyric-provider"
+entry = "plugin.so"
+title = "SuperLyric 歌词连接"
+author = "Xu YuanHao"
+author_url = "https://github.com/xu-yuanhao"
+homepage = "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/superlyric"
+license = "MIT"
+readme = "README.md"
+changelog = "CHANGELOG.md"
+icon = "icon.png"
