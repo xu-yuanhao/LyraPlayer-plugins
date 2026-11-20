@@ -54,6 +54,10 @@ int main(){
         },charts:{
           async list(){return {items:[{ref:{providerId:"local",kind:"chart",id:"top"},title:"Fixture chart"}]};},
           async getTracks(){return {items:[{ref:{providerId:"local",kind:"track",id:"42"},title:"Chart track"}]};}
+        },playlists:{
+          async categories(){return {items:[{ref:{providerId:"local",kind:"playlist-category",id:"cat"},title:"Category"}]};},
+          async list(ref){return {items:[{ref:{providerId:"local",kind:"playlist",id:ref.id+"-playlist"},title:"Fixture playlist"}]};},
+          async get(){return {tracks:[{ref:{providerId:"local",kind:"track",id:"43"},title:"Playlist track"}]};}
         }});
       };
     )";
@@ -66,7 +70,11 @@ int main(){
     auto lyric=Json::parse(sources::evaluate(ceru,"lyrics",Json::array({track}).dump()));
     assert(lyric=="[00:01.000]Fixture lyrics");
     auto directory=Json::parse(sources::evaluate(ceru,"collections","[]"));
-    assert(directory[0]["title"]=="Fixture chart");
+    assert(directory[0]["title"]=="Fixture chart" && directory[1]["title"]=="Fixture playlist");
+    auto playlists=Json::parse(sources::evaluate(ceru,"collections",R"(["local","playlists"])"));
+    assert(playlists.size()==1 && playlists[0]["title"]=="Fixture playlist");
+    auto playlist_tracks=Json::parse(sources::evaluate(ceru,"collection",Json::array({playlists[0]}).dump()));
+    assert(playlist_tracks["data"][0]["title"]=="Playlist track");
     auto collection_tracks=Json::parse(sources::evaluate(ceru,"collection",Json::array({directory[0]}).dump()));
     assert(collection_tracks["data"][0]["title"]=="Chart track");
     auto signed_ceru=std::string(ceru)+"\nexports.package={signature:{}};";

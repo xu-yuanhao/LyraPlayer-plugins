@@ -98,32 +98,46 @@ void worker(){
     }
 }
 Json invoke(const Source &source,const char *operation,const Json &args){
-    if(std::string_view(operation)=="search"){
-        auto ids=source.metadata.find("searchProviders");
-        if(ids!=source.metadata.end() && ids->is_array() && !ids->empty()){
-            std::vector<std::future<Json>> queries;
-            for(const auto &id:*ids){
-                if(queries.size()>=8)break;
-                if(!id.is_string())continue;
-                queries.push_back(std::async(std::launch::async,[&source,id,&args]{
-                    return parse(evaluate(source.script,"search",Json::array({args[0],id}).dump(),network,10));
-                }));
-            }
-            std::vector<Json> pages;
-            for(auto &query:queries){
-                auto result=query.get();
-                if(result.is_object() && result.contains("data") && result["data"].is_array())
-                    pages.push_back(std::move(result["data"]));
-            }
-            auto tracks=Json::array();
-            for(size_t rank=0;rank<item_limit && tracks.size()<item_limit;++rank)
-                for(auto &page:pages)
-                    if(rank<page.size() && tracks.size()<item_limit)tracks.push_back(std::move(page[rank]));
-            return Json{{"data",std::move(tracks)}};
+    const bool ceru=str(source.metadata,"format")=="ceru";
+    auto run=[&source,operation,ceru](const Json &input){
+        return parse(evaluate(source.script,operation,input.dump(),network,ceru?(std::string_view(operation)=="collections"?16:10):5));
+    };
+    const bool search=std::string_view(operation)=="search";
+    if(!ceru || (!search && std::string_view(operation)!="collections"))return run(args);
+
+    std::vector<std::future<Json>> queries;
+    auto launch=[&](const char *key,const char *kind){
+        auto ids=source.metadata.find(key);
+        if(ids==source.metadata.end() || !ids->is_array())return;
+        size_t count=0;
+        for(const auto &id:*ids){
+            if(count>=8)break;
+            if(!id.is_string())continue;
+            ++count;
+            auto input=search?Json::array({args[0],id}):Json::array({id,kind});
+            queries.push_back(std::async(std::launch::async,run,std::move(input)));
         }
+    };
+    if(search)launch("searchProviders","");
+    else {
+        launch("chartProviders","charts");
+        launch("playlistProviders","playlists");
     }
-    return parse(evaluate(source.script,operation,args.dump(),network,
-        str(source.metadata,"format")=="ceru"?10:5));
+    if(queries.empty())return run(args);
+    std::vector<Json> pages;
+    for(auto &query:queries){
+        auto result=query.get();
+        if(search && result.is_object() && result.contains("data")){
+            auto data=std::move(result["data"]);
+            result=std::move(data);
+        }
+        if(result.is_array() && !result.empty())pages.push_back(std::move(result));
+    }
+    auto items=Json::array();
+    for(size_t rank=0;rank<item_limit && items.size()<item_limit;++rank)
+        for(auto &page:pages)
+            if(rank<page.size() && items.size()<item_limit)items.push_back(std::move(page[rank]));
+    return search?Json{{"data",std::move(items)}}:std::move(items);
 }
 struct Row {std::string uid,title,artist,album,cover,lyric;int64_t duration=0;};
 void publish(uint64_t request,LyraMediaSinkV3 sink,const std::vector<Row> &rows,int error=0){

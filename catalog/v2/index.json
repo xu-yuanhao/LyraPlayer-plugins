@@ -164,9 +164,9 @@
       "abi": 3,
       "arch": "arm64-v8a",
       "author": "Xu YuanHao",
-      "bytes": 691605,
+      "bytes": 692034,
       "capability": "media.sources",
-      "changelog": "# 1.0.4\n\n支持导入澜音 Ceru Music v2 无签名单文件发行包，接入曲目搜索、播放地址解析、歌词和榜单。各平台的可用曲目取决于音源上游。\n\n# 1.0.3\n\n澜音 v2 单文件脚本兼容测试。支持基础曲目搜索和播放地址解析。澜音发行包及宿主模块尚未接入。\n\n# 1.0.2\n\n修复部分 LX Music 脚本解析播放地址。音源详情标明仅提供播放解析，导入时单独提示澜音 v2 格式。\n\n# 1.0.1\n\n精简媒体库音源列表。启用开关保留在音源详情。\n\n# 1.0.0\n\n从链接或本地文件导入音源，接入搜索、播放及「我的」集合。\n",
+      "changelog": "# 1.0.5\n\n修复澜音 v2 榜单和歌单加载。接入音源提供的精选歌单。\n\n# 1.0.4\n\n支持导入澜音 Ceru Music v2 无签名单文件发行包，接入曲目搜索、播放地址解析、歌词和榜单。各平台的可用曲目取决于音源上游。\n\n# 1.0.3\n\n澜音 v2 单文件脚本兼容测试。支持基础曲目搜索和播放地址解析。澜音发行包及宿主模块尚未接入。\n\n# 1.0.2\n\n修复部分 LX Music 脚本解析播放地址。音源详情标明仅提供播放解析，导入时单独提示澜音 v2 格式。\n\n# 1.0.1\n\n精简媒体库音源列表。启用开关保留在音源详情。\n\n# 1.0.0\n\n从链接或本地文件导入音源，接入搜索、播放及「我的」集合。\n",
       "config": "",
       "description": "从链接或文件导入音源，在 Lyra Player 搜索并播放。",
       "entry": "plugin.so",
@@ -175,14 +175,14 @@
       "id": "official.sources",
       "platform": "android",
       "readme": "# 导入音源\n\n在 Lyra Player 的「媒体库」点击「导入音源」。粘贴 HTTPS 脚本链接，或点击「选择文件」选择 UTF-8 JavaScript 文件。\n\n- MusicFree CommonJS 脚本可提供曲目搜索、播放地址和榜单。支持直接 HTTP 请求及 `axios`、`qs` 适配模块。\n- LX Music 自定义源可作为具有相应平台标识的歌曲的播放候选。仅提供解析的脚本需搭配可搜索的音源。\n- 澜音 Ceru Music v2 支持无需签名和个性化授权的发行包，接入曲目搜索、播放解析、歌词与集合。使用账号、签发授权或需要澜音专用界面的功能暂未接入。\n- 支持的榜单会显示在「我的」。详情页可启用、停用或按脚本链接更新音源。\n- 网络接口使用 HTTPS。依赖其他模块、私有运行时或未实现能力的脚本可能无法加载。\n\n仅导入你信任的脚本。插件在受限 QuickJS 环境运行脚本，并允许脚本发出 HTTPS 请求。插件包不包含音源脚本。\n\n[MusicFree 协议](https://musicfree.catcat.work/plugin/protocol.html) · [LX Music 脚本说明](https://lxmusic.toside.cn/desktop/custom-source)\n",
-      "sha256": "c2b210ccd155a5aebd0748719d2ba1ac3884d05054d96cfeb2e7f3a5595d5cdd",
+      "sha256": "47ae1b6d06ee486feedbc82ccd1d3774a848d48b50f77667229827f6cf0c94f3",
       "tags": "MusicFree LX Music 澜音 Ceru 音源 搜索 歌单",
       "title": "导入音源",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/sources-v1.0.4/official.sources-1.0.4-android-arm64-v8a.zip",
-        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.sources/1.0.4/official.sources-1.0.4-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/sources-v1.0.5/official.sources-1.0.5-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.sources/1.0.5/official.sources-1.0.5-android-arm64-v8a.zip"
       ],
-      "version": "1.0.4"
+      "version": "1.0.5"
     },
     {
       "abi": 3,

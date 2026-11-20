@@ -42,7 +42,7 @@
     return allowed[name];
   };
   const console = Object.freeze({ log() {}, warn() {}, error() {}, info() {}, debug() {}, group() {}, groupCollapsed() {}, groupEnd() {} });
-  const operation = () => ({ id: "lyra", deadlineAt: Date.now()+9500,
+  const operation = budget => ({ id: "lyra", deadlineAt: Date.now()+budget,
     signal: Object.freeze({ aborted: false, addEventListener() {}, removeEventListener() {}, throwIfAborted() {} }) });
   const ceru = async (source) => {
     const manifest = source.manifest;
@@ -159,7 +159,9 @@
       if([...plugin.providers.values()].some(p=>p.charts?.list || p.playlists?.categories))capabilities.push("歌单");
       return { format:"ceru", name:plugin.manifest.name, version:plugin.manifest.version,
         description:plugin.manifest.description, capabilities,
-        searchProviders:[...plugin.providers].filter(([,p])=>typeof (p.tracks ?? p).search==="function").map(([id])=>id) };
+        searchProviders:[...plugin.providers].filter(([,p])=>typeof (p.tracks ?? p).search==="function").map(([id])=>id),
+        chartProviders:[...plugin.providers].filter(([,p])=>typeof p.charts?.list==="function").map(([id])=>id),
+        playlistProviders:[...plugin.providers].filter(([,p])=>typeof p.playlists?.categories==="function").map(([id])=>id) };
     }
     if (plugin.format === "lx") return { format: "lx", capabilities: ["播放解析", "需要搭配可搜索的音源"], platforms: Object.keys(plugin.sources) };
     const source = plugin.source;
@@ -186,7 +188,7 @@
         }
         return hits;
       };
-      const op=operation();
+      const op=operation(method==="collections"?14500:9500);
       if (method === "search") {
         const hits = [];
         for (const [id, group] of plugin.providers) {
@@ -203,17 +205,25 @@
       }
       if(method==="collections"){
         const rows=[];
-        for(const [id, group] of plugin.providers){
-          for(const [kind,list] of [["chart",()=>group.charts?.list?.(op)],["playlist",()=>group.playlists?.categories?.(op)]]){
-            try {
-              const result=await list();
-              for(const row of result?.items ?? []){
-                if(rows.length>=100)break;
-                if(acceptable(row?.ref,id,kind) && typeof row.title==="string")
-                  rows.push({id:row.ref.id,title:row.title,ceruRef:row.ref});
-              }
-            }catch {}
+        const append=(items,id,kind)=>{
+          for(const row of items ?? []){
+            if(rows.length>=100)break;
+            if(acceptable(row?.ref,id,kind) && typeof row.title==="string")
+              rows.push({id:row.ref.id,title:row.title,ceruRef:row.ref});
           }
+        };
+        for(const [id, group] of plugin.providers){
+          if(args[0]!=null && args[0]!==id)continue;
+          if(args[1]!=="playlists"){
+            try { append((await group.charts?.list?.(op))?.items,id,"chart"); }catch {}
+          }
+          if(args[1]==="charts")continue;
+          try {
+            const categories=(await group.playlists?.categories?.(op))?.items ?? [];
+            append(categories,id,"playlist");
+            const category=categories.find(row=>acceptable(row?.ref,id,"playlist-category"));
+            if(category)append((await group.playlists.list?.(category.ref,undefined,op))?.items,id,"playlist");
+          }catch {}
         }
         return rows;
       }
@@ -224,7 +234,11 @@
       if(method==="collection"){
         const result=ref.kind==="chart"?await group.charts?.getTracks?.(ref,undefined,op)
           :ref.kind==="playlist"?await group.playlists?.get?.(ref,undefined,op):null;
-        return {data:tracks(result?.items ?? result?.tracks,ref.providerId)};
+        const rows=result?.items ?? result?.tracks;
+        return {data:Array.isArray(rows)?rows.slice(0,100).flatMap(row=>{
+          const providerId=row?.ref?.providerId;
+          return plugin.providers.has(providerId)?tracks([row],providerId):[];
+        }):[]};
       }
       if(ref.kind!=="track")return null;
       const provider=group.tracks ?? group;
