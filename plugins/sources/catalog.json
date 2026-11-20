@@ -11,7 +11,8 @@
   "package": "official.sources-1.0.5-android-arm64-v8a.zip",
   "urls": [
     "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/sources-v1.0.5/official.sources-1.0.5-android-arm64-v8a.zip",
-    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.sources/1.0.5/official.sources-1.0.5-android-arm64-v8a.zip"
+    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.sources/1.0.5/official.sources-1.0.5-android-arm64-v8a.zip",
+    "https://gitee.com/please-call-me-xu-zong/LyraPlayer-plugins/releases/download/sources-v1.0.5/official.sources-1.0.5-android-arm64-v8a.zip"
   ],
   "author": "Xu YuanHao",
   "homepage": "https://github.com/xu-yuanhao/LyraPlayer-plugins/tree/main/plugins/sources",
