@@ -98,7 +98,32 @@ void worker(){
     }
 }
 Json invoke(const Source &source,const char *operation,const Json &args){
-    return parse(evaluate(source.script,operation,args.dump(),network));
+    if(std::string_view(operation)=="search"){
+        auto ids=source.metadata.find("searchProviders");
+        if(ids!=source.metadata.end() && ids->is_array() && !ids->empty()){
+            std::vector<std::future<Json>> queries;
+            for(const auto &id:*ids){
+                if(queries.size()>=8)break;
+                if(!id.is_string())continue;
+                queries.push_back(std::async(std::launch::async,[&source,id,&args]{
+                    return parse(evaluate(source.script,"search",Json::array({args[0],id}).dump(),network,10));
+                }));
+            }
+            std::vector<Json> pages;
+            for(auto &query:queries){
+                auto result=query.get();
+                if(result.is_object() && result.contains("data") && result["data"].is_array())
+                    pages.push_back(std::move(result["data"]));
+            }
+            auto tracks=Json::array();
+            for(size_t rank=0;rank<item_limit && tracks.size()<item_limit;++rank)
+                for(auto &page:pages)
+                    if(rank<page.size() && tracks.size()<item_limit)tracks.push_back(std::move(page[rank]));
+            return Json{{"data",std::move(tracks)}};
+        }
+    }
+    return parse(evaluate(source.script,operation,args.dump(),network,
+        str(source.metadata,"format")=="ceru"?10:5));
 }
 struct Row {std::string uid,title,artist,album,cover,lyric;int64_t duration=0;};
 void publish(uint64_t request,LyraMediaSinkV3 sink,const std::vector<Row> &rows,int error=0){
@@ -177,8 +202,7 @@ void import_script(std::string data,std::string url,std::string update){
     const bool ceru=header.find("exports.manifest")!=header.npos &&
                     header.find("manifestVersion")!=header.npos &&
                     header.find("ceru-js@1")!=header.npos;
-    const bool issued=ceru && data.find("exports.package")!=std::string::npos;
-    auto metadata=issued?Json{}:parse(evaluate(data,"metadata","[]",network));
+    auto metadata=parse(evaluate(data,"metadata","[]",network));
     if(metadata.is_object() && str(metadata,"format")=="lx")
         for(const char *key:{"name","version","description"})metadata[key]=meta_header(data,key);
     if(metadata.is_object()){
@@ -189,7 +213,7 @@ void import_script(std::string data,std::string url,std::string update){
     bool changed=false;
     {
         std::lock_guard guard(lock);
-        if(issued || str(metadata,"format")=="ceru-package")notice="暂不支持澜音 v2 发行包";
+        if(str(metadata,"format")=="ceru-package")notice="暂不支持需验证签名或授权的澜音发行包";
         else if(ceru && !metadata.is_object())notice="澜音音源需要当前未提供的运行能力";
         else if(!metadata.is_object())notice="无法识别音源或脚本缺少依赖";
         else if(update.empty() && sources_list.size()>=source_limit)notice="音源数量已达上限";
@@ -227,14 +251,15 @@ void resolve(uint64_t request,LyraMediaSinkV3 sink,uint32_t operation,const std:
     if(!uid.is_array() || uid.size()!=2 || !uid[0].is_string() || !uid[1].is_object()){
         LyraMediaResourceV3 error{sizeof(error),request,-1,-1,nullptr,nullptr,nullptr};sink.resolved(sink.user,&error);return;
     }
-    auto platform=lx_platform(uid[1]);
+    const bool ceru=uid[1].contains("ceruRef");
+    auto platform=ceru?std::string{}:lx_platform(uid[1]);
     struct Race {std::mutex mutex;std::condition_variable done;size_t pending=0;std::string uri,headers;};
     Race race;
     std::vector<std::future<void>> attempts;
     for(const auto &source:active){
         const bool primary=source.id==uid[0];
         const bool lx=str(source.metadata,"format")=="lx";
-        if(!primary && operation!=LYRA_MEDIA_AUDIO)continue;
+        if(!primary && (ceru || operation!=LYRA_MEDIA_AUDIO))continue;
         if(lx && platform.empty())continue;
         {std::lock_guard guard(race.mutex);++race.pending;}
         attempts.push_back(std::async(std::launch::async,[&,source,primary,lx]{

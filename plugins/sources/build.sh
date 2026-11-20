@@ -17,10 +17,13 @@ fetch https://raw.githubusercontent.com/nlohmann/json/v3.11.3/single_include/nlo
 fetch https://raw.githubusercontent.com/nlohmann/json/v3.11.3/LICENSE.MIT "$deps/json.LICENSE" 86b998c792894ccb911a1cb7994f7a9652894e7a094c0b5e45be2f553f45cf14
 tar -xf "$deps/quickjs.tar.xz" -C "$deps"
 quick=$deps/quickjs-2026-06-04
-python3 - "$work/adapter.inc" <<'PY'
+npm --prefix js-runtime ci --no-audit --no-fund
+js-runtime/node_modules/.bin/esbuild js-runtime/entry.js --bundle --platform=browser --format=iife \
+    --global-name=CeruRuntime --minify --legal-comments=inline --outfile="$work/ceru-runtime.js"
+python3 - "$work/adapter.inc" "$work/ceru-runtime.js" <<'PY'
 from pathlib import Path
 import sys
-data=Path("src/adapter.js").read_bytes()
+data=Path("src/web-globals.js").read_bytes()+Path(sys.argv[2]).read_bytes()+Path("src/adapter.js").read_bytes()
 Path(sys.argv[1]).write_text("static constexpr unsigned char adapter[]={"+",".join(map(str,data))+",0};\n")
 PY
 objects=()
@@ -47,6 +50,13 @@ with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
     for name in ('manifest.toml','README.md','CHANGELOG.md','icon.png'):
         z.write(src/name,name)
     z.write(src/'catalog.json','metadata.json')
+    modules=src/'js-runtime/node_modules'
+    for package in ('@shiqianjiang/ceru-plugin-sdk','buffer','crypto-js','fflate','json5',
+                    'whatwg-url','webidl-conversions','tr46','punycode','base64-js','ieee754'):
+        location=modules/package
+        for license in sorted(location.glob('LICENSE*')):
+            z.write(license,'licenses/'+package.replace('/','-')+'-'+license.name)
+
     for name in ('plugin.so','QUICKJS-LICENSE.txt','JSON-LICENSE.txt'):
         z.write(root/'dist/sources'/name,name)
 print(archive)

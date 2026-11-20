@@ -46,10 +46,14 @@ int main(){
             return {items:[{ref:{providerId:"local",kind:"track",id:"42",data:{ticket:"fixture"}},
               title:request.query, durationMs:42000, metadata:{artists:["Artist"],album:{title:"Album"}}}]};
           },
+          async lyrics(){return {format:"crlyric",offsetMs:10,lines:[{startTimeMs:990,text:"Fixture lyrics"}]};},
           async resolve(ref, quality){
             if(quality !== "low" || ref.data.ticket !== "fixture") return {ok:false};
             return {ok:true,url:"https://fixture.test/track",requestHeaders:{"X-Fixture":"yes"}};
           }
+        },charts:{
+          async list(){return {items:[{ref:{providerId:"local",kind:"chart",id:"top"},title:"Fixture chart"}]};},
+          async getTracks(){return {items:[{ref:{providerId:"local",kind:"track",id:"42"},title:"Chart track"}]};}
         }});
       };
     )";
@@ -59,8 +63,48 @@ int main(){
     assert(track["title"]=="Track" && track["artist"]=="Artist" && track["duration"]==42);
     auto ceru_play=Json::parse(sources::evaluate(ceru,"resolve",Json::array({"",track}).dump()));
     assert(ceru_play["url"]=="https://fixture.test/track" && ceru_play["headers"]["X-Fixture"]=="yes");
+    auto lyric=Json::parse(sources::evaluate(ceru,"lyrics",Json::array({track}).dump()));
+    assert(lyric=="[00:01.000]Fixture lyrics");
+    auto directory=Json::parse(sources::evaluate(ceru,"collections","[]"));
+    assert(directory[0]["title"]=="Fixture chart");
+    auto collection_tracks=Json::parse(sources::evaluate(ceru,"collection",Json::array({directory[0]}).dump()));
+    assert(collection_tracks["data"][0]["title"]=="Chart track");
     auto signed_ceru=std::string(ceru)+"\nexports.package={signature:{}};";
     assert(Json::parse(sources::evaluate(signed_ceru,"metadata","[]"))["format"]=="ceru-package");
+    const auto bundle=std::string(ceru)+R"(
+      exports.package={formatVersion:2,syntax:"js",signature:null};
+      exports.manifest.permissions=[{key:"network",name:"network.request"}];
+      const legacy=globalThis.__ceruRequire("@ceru/legacy-http");
+      const crypto=globalThis.__ceruRequire("@ceru/crypto");
+      const encoding=globalThis.__ceruRequire("@ceru/encoding");
+      const activate=exports.activate;
+      exports.activate=async ctx=>{
+        if(crypto.createHash("sha256").update("hello").digest("hex").length!==64)throw Error("hash");
+        if(crypto.randomBytes(4).length!==4)throw Error("random");
+        if(encoding.decode(new Uint8Array([97]),"utf-8")!=="a")throw Error("encoding");
+        const bridge=legacy.createLegacyHttpBridge(ctx);
+        await activate({providers:{register(id,provider){
+          const search=provider.tracks.search;
+          provider.tracks.search=(request,op)=>bridge.withOperation(op,async ()=>{
+            await new Promise(resolve=>{
+              const cancelled=setTimeout(()=>{throw Error("cleared timer fired");},0);
+              clearTimeout(cancelled);
+              setTimeout(resolve,1);
+            });
+            const response=await bridge.httpFetch("http://fixture.test/search").promise;
+            if(response.body.title!=="Fixture")throw Error("transport");
+            return search(request,op);
+          });
+          return ctx.providers.register(id,provider);
+        }}});
+      };
+    )";
+    assert(Json::parse(sources::evaluate(bundle,"metadata","[]"))["format"]=="ceru");
+    auto bundle_search=Json::parse(sources::evaluate(bundle,"search",R"(["Track"])",[](auto url,auto call,auto,auto){
+        assert(url=="https://fixture.test/search" && call=="GET");
+        return R"({"status":200,"body":"{\"title\":\"Fixture\"}"})";
+    }));
+    assert(bundle_search["data"][0]["title"]=="Track");
     assert(sources::evaluate("require('fs')","metadata","[]").empty());
     assert(sources::evaluate("for(;;){}","metadata","[]").empty());
 }

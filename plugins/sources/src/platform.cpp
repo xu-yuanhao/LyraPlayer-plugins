@@ -178,7 +178,16 @@ static std::string fetch(std::string_view url,std::string_view verb,std::string_
             if(e.failed() || !ok)return failure;
         }
         if(binary)return code>=200 && code<300?text:std::string{};
-        return Json{{"status",code},{"body",std::move(text)}}.dump(-1,' ',false,Json::error_handler_t::replace);
+        Json response_headers=Json::object();
+        if(auto get_header=e.method(connection,"getHeaderField","(Ljava/lang/String;)Ljava/lang/String;"))
+            for(const char *name:{"content-type","location","retry-after","etag"}){
+                auto key=j->NewStringUTF(name);
+                auto value=static_cast<jstring>(j->CallObjectMethod(connection,get_header,key));
+                auto text_value=string(e,value);
+                if(!text_value.empty())response_headers[name]=std::move(text_value);
+                j->DeleteLocalRef(key);if(value)j->DeleteLocalRef(value);
+            }
+        return Json{{"status",code},{"body",std::move(text)},{"headers",std::move(response_headers)}}.dump(-1,' ',false,Json::error_handler_t::replace);
     };
     auto result=run();
     if(disconnect)j->CallVoidMethod(connection,disconnect);
@@ -186,6 +195,24 @@ static std::string fetch(std::string_view url,std::string_view verb,std::string_
 }
 std::string network(std::string_view url,std::string_view method,std::string_view headers,std::string_view body){
     return fetch(url,method,headers,body,false);
+}
+std::string decode_charset(std::string_view bytes,const char *encoding){
+    Env e;if(!e.env)return {};
+    auto *j=e.env;
+    auto cls=j->FindClass("java/lang/String");
+    if(e.failed() || !cls)return {};
+    auto ctor=j->GetMethodID(cls,"<init>","([BLjava/lang/String;)V");
+    auto out=j->GetMethodID(cls,"getBytes","(Ljava/lang/String;)[B");
+    auto input=j->NewByteArray(jsize(bytes.size()));
+    if(e.failed() || !ctor || !out || !input)return {};
+    j->SetByteArrayRegion(input,0,jsize(bytes.size()),reinterpret_cast<const jbyte *>(bytes.data()));
+    auto text=j->NewObject(cls,ctor,input,j->NewStringUTF(encoding));
+    if(e.failed() || !text)return {};
+    auto encoded=static_cast<jbyteArray>(j->CallObjectMethod(text,out,j->NewStringUTF("UTF-8")));
+    if(e.failed() || !encoded)return {};
+    std::string result(size_t(j->GetArrayLength(encoded)),'\0');
+    j->GetByteArrayRegion(encoded,0,jsize(result.size()),reinterpret_cast<jbyte *>(result.data()));
+    return e.failed()?std::string{}:result;
 }
 std::string icon_tile(std::string_view url){
     constexpr jsize side=32;

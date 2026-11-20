@@ -42,32 +42,85 @@
     return allowed[name];
   };
   const console = Object.freeze({ log() {}, warn() {}, error() {}, info() {}, debug() {}, group() {}, groupCollapsed() {}, groupEnd() {} });
-  const operation = () => ({ id: "lyra", deadlineAt: Date.now()+4500,
-    signal: Object.freeze({ aborted: false, addEventListener() {}, removeEventListener() {} }) });
+  const operation = () => ({ id: "lyra", deadlineAt: Date.now()+9500,
+    signal: Object.freeze({ aborted: false, addEventListener() {}, removeEventListener() {}, throwIfAborted() {} }) });
   const ceru = async (source) => {
     const manifest = source.manifest;
-    if (source.package != null || manifest.signature || manifest.delivery || manifest.template)
+    const pack = source.package;
+    if ((pack != null && (pack.formatVersion !== 2 || pack.syntax !== "js" || pack.signature !== null ||
+        pack.template != null || pack.delivery != null)) || manifest.signature || manifest.delivery || manifest.template)
       return { format: "ceru-package" };
     if (manifest.engines?.logicRuntime !== "ceru-js@1" || typeof source.activate !== "function")
       throw new Error("Unsupported Ceru activation");
     const providers = new Map();
+    const effects = [];
     const declared = (manifest.contributes?.providers ?? []).filter(entry => entry.connectionMode == null || entry.connectionMode === "none");
+    const allowedKeys = new Set((manifest.permissions ?? []).filter(p => p.name === "network.request").map(p => p.key));
+    const permissions = Object.freeze({
+      async query({key}) { return {status:allowedKeys.has(key) ? "granted" : "denied"}; },
+      async request({key}) { return this.query({key}); },
+    });
+    const http = Object.freeze({
+      async request(input) {
+        if (!allowedKeys.has(input.permissionKey) || input.credential != null)
+          throw Error("Network permission unavailable");
+        const url = new URL(input.url);
+        if(url.protocol==="http:" && !url.port)url.protocol="https:";
+        if(url.protocol!=="https:" || url.username || url.password)throw Error("Expected HTTPS URL");
+        input.operation.signal.throwIfAborted();
+        const result=request(url.href,{method:input.method,headers:input.headers,body:input.body});
+        if (!result.status) throw Error("HTTP connection failed");
+        return {status:result.status,headers:result.headers ?? {},body:parse(result.body)};
+      },
+      create(options) { return CeruRuntime.createHttpClient({ http, permissions },options); },
+    });
+    const discard = () => ({ dispose() {} });
     const ctx = Object.freeze({
       plugin: Object.freeze({ id:manifest.id, version:manifest.version, manifest }),
-      config: Object.freeze({ async get() { return Object.freeze({}); } }),
+      config: Object.freeze({ async get() { return Object.freeze({...manifest.config}); } }),
       log: console,
+      permissions, http,
+      effects:Object.freeze({add(effect){if(effect && typeof effect.dispose==="function")effects.push(effect);}}),
+      actions:Object.freeze({register:discard}),
+      lyricConverters:Object.freeze({register:discard}),
+      playlistImporters:Object.freeze({register:discard}),
+      ui:Object.freeze({toast() {},pluginUpdate:Object.freeze({async request(){return false;}})}),
+      playback:Object.freeze({failure:Object.freeze({register:discard})}),
       providers: Object.freeze({
         register(id, implementation) {
           if (!declared.some(entry => entry.id === id) || providers.has(id)) throw new Error("Invalid provider registration");
-          providers.set(id,implementation.tracks ?? implementation);
+          providers.set(id,implementation);
           return { dispose() { providers.delete(id); } };
         },
       }),
     });
+    Object.assign(globalThis,{ceru:ctx});
+    const legacy=CeruRuntime.createLegacyHttpBridge(ctx);
+    legacyBridges.set(ctx,legacy);
     await source.activate(ctx);
-    if (![...providers.values()].some(track => typeof track.search === "function" || typeof track.resolve === "function"))
+    if (![...providers.values()].some(p => typeof (p.tracks ?? p).search === "function" || typeof (p.tracks ?? p).resolve === "function" || p.playlists || p.charts))
       throw new Error("No compatible Ceru track provider");
-    return { format:"ceru", manifest, providers, declared };
+    return { format:"ceru", manifest, providers, declared, effects };
+  };
+  const legacyBridges = new WeakMap();
+  const ceruModules=Object.freeze({
+    "@ceru/crypto":CeruRuntime.crypto,
+    "@ceru/compression":CeruRuntime.compression,
+    "@ceru/encoding":Object.freeze({decode:(bytes,encoding)=>new TextDecoder(encoding).decode(bytes)}),
+    "@ceru/legacy-http":Object.freeze({
+      createLegacyHttpBridge(ctx) {
+        const bridge=legacyBridges.get(ctx);
+        if(!bridge)throw Error("Legacy HTTP context unavailable");
+        return bridge;
+      }
+    }),
+  });
+  globalThis.URL=CeruRuntime.URL;
+  globalThis.URLSearchParams=CeruRuntime.URLSearchParams;
+  globalThis.Buffer=CeruRuntime.Buffer;
+  globalThis.__ceruRequire=(name)=>{
+    if(!Object.hasOwn(ceruModules,name))throw Error("Unsupported Ceru module: "+name);
+    return ceruModules[name];
   };
   globalThis.__load = async code => {
     let listener, sources;
@@ -99,11 +152,14 @@
   globalThis.__metadata = plugin => {
     if (plugin.format === "ceru-package") return { format:"ceru-package" };
     if (plugin.format === "ceru") {
-      const capabilities = [["search","搜索"],["resolve","播放"]]
-        .filter(([method]) => [...plugin.providers.values()].some(provider => typeof provider[method] === "function"))
+      const trackProviders=[...plugin.providers.values()].map(p=>p.tracks ?? p);
+      const capabilities = [["search","搜索"],["resolve","播放"],["lyrics","歌词"]]
+        .filter(([method]) => trackProviders.some(provider => typeof provider[method] === "function"))
         .map(([, label]) => label);
+      if([...plugin.providers.values()].some(p=>p.charts?.list || p.playlists?.categories))capabilities.push("歌单");
       return { format:"ceru", name:plugin.manifest.name, version:plugin.manifest.version,
-        description:plugin.manifest.description, capabilities };
+        description:plugin.manifest.description, capabilities,
+        searchProviders:[...plugin.providers].filter(([,p])=>typeof (p.tracks ?? p).search==="function").map(([id])=>id) };
     }
     if (plugin.format === "lx") return { format: "lx", capabilities: ["播放解析", "需要搭配可搜索的音源"], platforms: Object.keys(plugin.sources) };
     const source = plugin.source;
@@ -114,33 +170,80 @@
   };
   globalThis.__invoke = async (plugin, method, args) => {
     if (plugin.format === "ceru") {
+      const acceptable=(ref,providerId,kind)=>ref?.providerId===providerId && ref.kind===kind &&
+        typeof ref.id==="string" && ref.connectionId==null &&
+        (ref.pluginId==null || ref.pluginId===plugin.manifest.id);
+      const tracks=(rows,providerId)=>{
+        const hits=[];
+        if(!Array.isArray(rows))return hits;
+        for(const row of rows){
+          if(hits.length>=100)break;
+          if(!row || !acceptable(row.ref,providerId,"track"))continue;
+          const metadata=row.metadata ?? {};
+          hits.push({id:row.ref.id,title:row.title,artist:metadata.artists?.join(" / ") ?? row.subtitle,
+            album:metadata.album?.title,artwork:metadata.artworkUrl,
+            duration:(row.durationMs ?? metadata.durationMs ?? 0)/1000,ceruRef:row.ref});
+        }
+        return hits;
+      };
+      const op=operation();
       if (method === "search") {
         const hits = [];
-        for (const [providerId, provider] of plugin.providers) {
+        for (const [id, group] of plugin.providers) {
+          if (args[1] != null && args[1] !== id) continue;
+          const provider=group.tracks ?? group;
           if (typeof provider.search !== "function") continue;
           try {
-            const result = await provider.search({ query:args[0], kinds:["track"], filters:{}, limit:50 },operation());
-            for (const row of result?.items ?? []) {
-              if (hits.length >= 100) break;
-              const { ref, metadata = {} } = row;
-              if (ref?.providerId !== providerId || ref.kind !== "track" || typeof ref.id !== "string" ||
-                  ref.connectionId != null || (ref.pluginId != null && ref.pluginId !== plugin.manifest.id)) continue;
-              hits.push({ id:ref.id, title:row.title, artist:metadata.artists?.join(" / ") ?? row.subtitle,
-                album:metadata.album?.title, artwork:metadata.artworkUrl,
-                duration:(row.durationMs ?? metadata.durationMs ?? 0)/1000, ceruRef:ref });
-            }
+            const result=await provider.search({query:args[0],kinds:["track"],filters:{},limit:50},op);
+            hits.push(...tracks(result?.items,id));
           } catch {}
+          if(hits.length>=100)break;
         }
-        return { data:hits };
+        return {data:hits.slice(0,100)};
       }
-      if (method === "resolve") {
-        const ref = args[1]?.ceruRef;
-        const provider = plugin.providers.get(ref?.providerId);
-        if (!provider?.resolve || ref.kind !== "track" || ref.connectionId != null ||
-            (ref.pluginId != null && ref.pluginId !== plugin.manifest.id)) return null;
-        const quality = plugin.declared.find(entry => entry.id === ref.providerId)?.qualities?.[0];
-        const resolved = await provider.resolve(ref,quality,operation());
-        return resolved?.ok === true ? { url:resolved.url, headers:resolved.requestHeaders } : null;
+      if(method==="collections"){
+        const rows=[];
+        for(const [id, group] of plugin.providers){
+          for(const [kind,list] of [["chart",()=>group.charts?.list?.(op)],["playlist",()=>group.playlists?.categories?.(op)]]){
+            try {
+              const result=await list();
+              for(const row of result?.items ?? []){
+                if(rows.length>=100)break;
+                if(acceptable(row?.ref,id,kind) && typeof row.title==="string")
+                  rows.push({id:row.ref.id,title:row.title,ceruRef:row.ref});
+              }
+            }catch {}
+          }
+        }
+        return rows;
+      }
+      const item=method==="resolve"?args[1]:args[0];
+      const ref=item?.ceruRef;
+      const group=plugin.providers.get(ref?.providerId);
+      if(!group || !acceptable(ref,ref.providerId,ref.kind))return null;
+      if(method==="collection"){
+        const result=ref.kind==="chart"?await group.charts?.getTracks?.(ref,undefined,op)
+          :ref.kind==="playlist"?await group.playlists?.get?.(ref,undefined,op):null;
+        return {data:tracks(result?.items ?? result?.tracks,ref.providerId)};
+      }
+      if(ref.kind!=="track")return null;
+      const provider=group.tracks ?? group;
+      if(method==="resolve"){
+        const quality=plugin.declared.find(entry=>entry.id===ref.providerId)?.qualities?.[0];
+        const resolved=await provider.resolve?.(ref,quality,op);
+        return resolved?.ok===true?{url:resolved.url,headers:resolved.requestHeaders}:null;
+      }
+      if(method==="lyrics"){
+        const result=await provider.lyrics?.(ref,op);
+        if(result?.format!=="crlyric")return null;
+        if(!Array.isArray(result.lines) || !result.lines.length)return result.plainText ?? null;
+        const lrc=result.lines.flatMap(line=>{
+          if(!Number.isFinite(line.startTimeMs) || line.startTimeMs<0 || typeof line.text!=="string")return [];
+          const time=Math.max(0,Math.trunc(line.startTimeMs+(result.offsetMs ?? 0)));
+          const pad=(value,width)=>String(value).padStart(width,"0");
+          return  "["+pad(Math.floor(time/60000),2)+":"+pad(Math.floor(time/1000)%60,2)+"."+pad(time%1000,3)+"]"+line.text;
+        }).join("\n");
+        return lrc;
       }
       return null;
     }

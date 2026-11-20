@@ -11,5 +11,6 @@ int take_document();
 std::string read_file(int fd,size_t limit);
 std::string network(std::string_view url,std::string_view method,
                     std::string_view headers,std::string_view body);
+std::string decode_charset(std::string_view bytes,const char *encoding);
 std::string icon_tile(std::string_view url);
 }

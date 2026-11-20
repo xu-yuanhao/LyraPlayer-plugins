@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "dependencies": {
+    "@shiqianjiang/ceru-plugin-sdk": "0.3.15",
+    "buffer": "6.0.3",
+    "esbuild": "0.25.12",
+    "whatwg-url": "14.2.0"
+  }
+}
