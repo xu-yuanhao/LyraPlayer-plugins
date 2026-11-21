@@ -103,7 +103,7 @@ std::string lyrics_from_context(AVFormatContext* fmt) {
 struct SystemDecode {
     int fd=-1,sample_rate=48000,index=-1;
     int64_t duration_us=0,audible_end_us=0,first_media_us=-1,total_frames=0,delivered_frames=0,io_position=0,last_block_us=0;
-    bool input_end=false,output_end=false;
+    bool input_end=false,output_end=false,seekable=true;
     AVIOContext *avio=nullptr;AVFormatContext *fmt=nullptr;AVCodecContext *ctx=nullptr;
     AVPacket *pkt=nullptr;AVFrame *frame=nullptr;SwrContext *swr=nullptr;
     int swr_rate=0,swr_format=-1,swr_output=0;AVChannelLayout swr_layout{};
@@ -117,11 +117,12 @@ struct SystemDecode {
     static int read_io(void *opaque,uint8_t *bytes,int count){
         auto &s=*static_cast<SystemDecode*>(opaque);
         if(s.leading_gap.bytes && s.io_position<s.leading_gap.at)count=int(std::min(int64_t(count),s.leading_gap.at-s.io_position));
+        if(!s.seekable){for(;;){ssize_t n=read(s.fd,bytes,size_t(count));if(n>0){s.io_position+=n;return int(n);}if(!n)return AVERROR_EOF;if(errno!=EINTR)return AVERROR(errno);}}
         int64_t physical=s.io_position+(s.leading_gap.bytes && s.io_position>=s.leading_gap.at?s.leading_gap.bytes:0);
         for(;;){ssize_t n=pread(s.fd,bytes,size_t(count),physical);if(n>0){s.io_position+=n;return int(n);}if(!n)return AVERROR_EOF;if(errno!=EINTR)return AVERROR(errno);}
     }
     static int64_t seek_io(void *opaque,int64_t offset,int whence){
-        auto &s=*static_cast<SystemDecode*>(opaque);struct stat st{};if(fstat(s.fd,&st))return AVERROR(errno);
+        auto &s=*static_cast<SystemDecode*>(opaque);if(!s.seekable)return AVERROR(ENOSYS);struct stat st{};if(fstat(s.fd,&st))return AVERROR(errno);
         int64_t size=st.st_size-s.leading_gap.bytes;
         if(whence&AVSEEK_SIZE)return size;
         int base=whence&~AVSEEK_FORCE;int64_t at=base==SEEK_SET?0:base==SEEK_CUR?s.io_position:base==SEEK_END?size:-1;
@@ -130,14 +131,15 @@ struct SystemDecode {
     }
     bool open_format(){
         struct stat source_stat{};
-        if(!fstat(fd,&source_stat))leading_gap=lyra::audio::flac_leading_gap(fd,source_stat.st_size);
+        if(!fstat(fd,&source_stat))seekable=S_ISREG(source_stat.st_mode)||S_ISBLK(source_stat.st_mode);
+        if(seekable && !fstat(fd,&source_stat))leading_gap=lyra::audio::flac_leading_gap(fd,source_stat.st_size);
         if(leading_gap.bytes)lyra_log(LyraLogInfo,"Lyra","FLAC recovered verified first frame after %lld leading bytes",(long long)leading_gap.bytes);
         auto *buffer=static_cast<uint8_t*>(av_malloc(32768));if(!buffer)return false;
         avio=avio_alloc_context(buffer,32768,0,this,read_io,nullptr,seek_io);if(!avio){av_free(buffer);return false;}
         fmt=avformat_alloc_context();if(!fmt)return false;fmt->pb=avio;fmt->flags|=AVFMT_FLAG_CUSTOM_IO;
         fmt->probesize=96*1024;fmt->format_probesize=96*1024;
         struct stat st{};const AVInputFormat *format=nullptr;
-        if(!fstat(fd,&st) && lyra::audio::flac_payload_offset(fd,st.st_size)>=0)format=av_find_input_format("flac");
+        if(seekable && !fstat(fd,&st) && lyra::audio::flac_payload_offset(fd,st.st_size)>=0)format=av_find_input_format("flac");
         return avformat_open_input(&fmt,nullptr,format,nullptr)>=0;
     }
     bool open(){
