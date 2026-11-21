@@ -117,7 +117,7 @@ struct SystemDecode {
     static int read_io(void *opaque,uint8_t *bytes,int count){
         auto &s=*static_cast<SystemDecode*>(opaque);
         if(s.leading_gap.bytes && s.io_position<s.leading_gap.at)count=int(std::min(int64_t(count),s.leading_gap.at-s.io_position));
-        if(!s.seekable){for(;;){ssize_t n=read(s.fd,bytes,size_t(count));if(n>0){s.io_position+=n;return int(n);}if(!n)return AVERROR_EOF;if(errno!=EINTR)return AVERROR(errno);}}
+        if(!s.seekable){for(;;){ssize_t n=::read(s.fd,bytes,size_t(count));if(n>0){s.io_position+=n;return int(n);}if(!n)return AVERROR_EOF;if(errno!=EINTR)return AVERROR(errno);}}
         int64_t physical=s.io_position+(s.leading_gap.bytes && s.io_position>=s.leading_gap.at?s.leading_gap.bytes:0);
         for(;;){ssize_t n=pread(s.fd,bytes,size_t(count),physical);if(n>0){s.io_position+=n;return int(n);}if(!n)return AVERROR_EOF;if(errno!=EINTR)return AVERROR(errno);}
     }
