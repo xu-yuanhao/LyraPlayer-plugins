@@ -17,7 +17,8 @@ token = subprocess.run(['grep','-oP',r'token:\s*\K.*',str(next(token))],capture_
 
 def api(path, data=None, is_json=False, retries=6):
     for attempt in range(retries):
-        cmd = ['curl','-s','--max-time','90',API+path]
+        sep='&' if '?' in path else '?'
+        cmd = ['curl','-s','--max-time','90',API+path+sep+'access_token='+token]
         if data is not None:
             cmd += ['-X','POST']
             if is_json:
