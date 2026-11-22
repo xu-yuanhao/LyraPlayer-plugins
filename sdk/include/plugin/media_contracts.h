@@ -33,6 +33,10 @@ typedef struct LyraMediaBatchV3 {
     const char *cursor;
     int32_t error;
 } LyraMediaBatchV3;
+// headers_json may carry the reserved directive "X-Lyra-Stream": "1". The host
+// strips X-Lyra-* names before sending and delivers the body progressively
+// through a pipe fd (non-seekable) instead of a completed file. Use it for
+// live or effectively infinite sources; seekable media should omit it.
 typedef struct LyraMediaResourceV3 {
     uint32_t size;
     uint64_t request_id;

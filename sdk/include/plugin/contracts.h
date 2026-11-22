@@ -224,6 +224,10 @@ typedef struct LyraClassificationRulesV3 {
 
 #include "service_contracts.h"
 
+#include "net_contracts.h"
+#include "store_contracts.h"
+#include "tap_contracts.h"
+
 #include "presentation_contracts.h"
 
 #define LYRA_INTERFACE_PLUGIN_INVENTORY 18u
