@@ -40,8 +40,9 @@ bool initialize(const LyraHostV3 *host){
     Env e;
     if(!e.env || !host->android_context)return false;
     auto object=static_cast<jobject>(host->android_context);
-    auto version=e.method(object,"lyraPlatformVersion","()I");
-    if(!version || e.env->CallIntMethod(object,version)!=9 || e.failed())return false;
+    if (!e.method(object, "getFilesDir", "()Ljava/io/File;") ||
+        !e.method(object, "chooseDocument", "(Ljava/lang/String;Ljava/lang/String;)V") ||
+        !e.method(object, "takeDocumentFd", "()I")) return false;
     activity=e.env->NewGlobalRef(object);
     return activity!=nullptr;
 }

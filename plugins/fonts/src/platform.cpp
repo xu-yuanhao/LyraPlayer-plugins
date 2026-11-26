@@ -12,7 +12,12 @@ struct Call {
  bool ok(){if(!env || env->ExceptionCheck()){if(env)env->ExceptionClear();return false;}return true;}
 };
 }
-bool font_platform_ready(const LyraHostV3*h){Call c(h);auto id=c.method("lyraPlatformVersion","()I");return id && c.env->CallIntMethod(c.object,id)==9 && c.ok();}
+bool font_platform_ready(const LyraHostV3 *host) {
+    Call call(host);
+    return call.method("getFilesDir", "()Ljava/io/File;") &&
+           call.method("chooseDocument", "(Ljava/lang/String;Ljava/lang/String;)V") &&
+           call.method("takeDocumentFd", "()I") && call.ok();
+}
 std::string font_storage(const LyraHostV3*h){Call c(h);auto id=c.method("getFilesDir","()Ljava/io/File;");if(!id)return {};auto file=c.env->CallObjectMethod(c.object,id);if(!file || !c.ok())return {};auto cls=c.env->GetObjectClass(file);auto path=c.env->GetMethodID(cls,"getAbsolutePath","()Ljava/lang/String;");auto str=path?static_cast<jstring>(c.env->CallObjectMethod(file,path)):nullptr;std::string out;
  if(str && c.ok()){auto *p=c.env->GetStringUTFChars(str,nullptr);if(p){out=p;c.env->ReleaseStringUTFChars(str,p);}c.env->DeleteLocalRef(str);}c.env->DeleteLocalRef(cls);c.env->DeleteLocalRef(file);return out;
 }
