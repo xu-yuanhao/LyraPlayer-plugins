@@ -4,8 +4,6 @@
 #include "platform/log.h"
 #include <cstring>
 #include <mutex>
-#include <atomic>
-#include "screen_throttle.h"
 #include "playback/transition_control.h"
 #ifndef LYRA_PLUGIN_VERSION
 #error "Build must provide the catalog plugin version"
@@ -14,89 +12,50 @@
 #define LYRA_PLUGIN_ID "official.ffmpeg"
 #endif
 #include <jni.h>
-// The host hands us its JavaVM and a Context so we can answer "is the screen
-// interactive?" ourselves; the playback engine polls this once a second to size
-// the output buffer (screen-off = large/low-power, screen-on = small/low-latency).
-static JavaVM *g_vm = nullptr;
-static jobject g_context = nullptr; // global ref
-static jobject g_power = nullptr;   // global ref to PowerManager
-static jmethodID g_is_interactive = nullptr;
-// The host fills java_vm/android_context into this same struct after init (via
-// set_platform), so read them lazily at first poll rather than only at init.
-static const LyraHostV3 *platform_host = nullptr;
-static void screen_jni_init(void *vm, void *context) {
-    if (!vm || !context) return;
-    g_vm = static_cast<JavaVM *>(vm);
+// Called only when the engine needs a new stream. Use the Activity
+// supplied by the host and keep JNI references local to this query.
+static int screen_active_query(void *user) {
+    auto *host = static_cast<const LyraHostV3 *>(user);
+    if (!host->java_vm || !host->android_context) return 1;
+    auto *vm = static_cast<JavaVM *>(host->java_vm);
     JNIEnv *env = nullptr;
-    bool attached = false;
-    if (g_vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) == JNI_EDETACHED) {
-        if (g_vm->AttachCurrentThread(&env, nullptr) != JNI_OK) return;
-        attached = true;
-    } else if (!env) return;
-    g_context = env->NewGlobalRef(static_cast<jobject>(context));
-    if (g_context) {
-        jclass ctx = env->GetObjectClass(g_context);
-        jmethodID gss = env->GetMethodID(ctx, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
-        if (gss) {
-            jstring name = env->NewStringUTF("power");
-            jobject power = env->CallObjectMethod(g_context, gss, name);
-            if (power) {
-                g_power = env->NewGlobalRef(power);
-                jclass pm = env->GetObjectClass(power);
-                g_is_interactive = env->GetMethodID(pm, "isInteractive", "()Z");
-            }
-        }
+    const jint status = vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
+    const bool attach = status == JNI_EDETACHED;
+    if (attach && vm->AttachCurrentThread(&env, nullptr) != JNI_OK) return 1;
+    if (!env) return 1;
+    int active = 1;
+    if (env->PushLocalFrame(8) == JNI_OK) {
+        auto context = static_cast<jobject>(host->android_context);
+        auto type = env->GetObjectClass(context);
+        auto service = type ? env->GetMethodID(type, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;") : nullptr;
+        auto name = service ? env->NewStringUTF("power") : nullptr;
+        auto power = name ? env->CallObjectMethod(context, service, name) : nullptr;
+        auto power_type = power ? env->GetObjectClass(power) : nullptr;
+        auto is_interactive = power_type ? env->GetMethodID(power_type, "isInteractive", "()Z") : nullptr;
+        if (is_interactive) active = env->CallBooleanMethod(power, is_interactive) ? 1 : 0;
+        env->PopLocalFrame(nullptr);
     }
-    if (env->ExceptionCheck()) env->ExceptionClear();
-    if (attached) g_vm->DetachCurrentThread();
-}
-static std::atomic<bool> screen_throttle{false};
-static void refresh_screen_throttle() {
-    char text[4096]{};
-    int count=platform_host && platform_host->config_text
-        ? platform_host->config_text(platform_host->user,"system",text,sizeof(text)) : 0;
-    screen_throttle.store(count>0 && count<int(sizeof(text))-1 && screen_throttle_enabled(text),std::memory_order_release);
-}
-static int screen_active_query(void *) {
-    if (!screen_throttle.load(std::memory_order_acquire)) return 1;
-    if (!g_power) {
-        if (platform_host) screen_jni_init(platform_host->java_vm, platform_host->android_context);
-        if (!g_power) return 1;
-    }
-    JNIEnv *env = nullptr;
-    bool attached = false;
-    jint st = g_vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
-    if (st == JNI_EDETACHED) {
-        if (g_vm->AttachCurrentThread(&env, nullptr) != JNI_OK) return 1;
-        attached = true;
-    } else if (st != JNI_OK || !env) {
-        return 1;
-    }
-    int on = env->CallBooleanMethod(g_power, g_is_interactive) ? 1 : 0;
-    if (env->ExceptionCheck()) { env->ExceptionClear(); on = 1; }
-    if (attached) g_vm->DetachCurrentThread();
-    return on;
+    if (env->ExceptionCheck()) { env->ExceptionClear(); active = 1; }
+    if (attach) vm->DetachCurrentThread();
+    return active;
 }
 static OwnedPlaybackBackend backend;
-static LyraAudioTransitionV3 transition_api{};
-static const LyraAudioTransitionV3 *native_transition=nullptr;
-static int transition_request(void *,const LyraMessageV3 *message,LyraReplyV3 *reply) {
-    int result=native_transition->request(native_transition->user,message,reply);
-    // Host configuration commits configure this interface on the main thread.
-    // Read the host table here, never from the decoder/output worker.
-    if(result==LYRA_MESSAGE_OK && message && message->size==sizeof(*message) &&
-       message->operation==LYRA_TRANSITION_CONFIGURE) refresh_screen_throttle();
-    return result;
+static int init(const LyraHostV3 *host) {
+    backend = make_engine_backend();
+    if (backend.set_screen_query)
+        backend.set_screen_query(backend.api.user, screen_active_query, const_cast<LyraHostV3 *>(host));
+    lyra_log(LyraLogInfo,"Lyra","ffmpeg playback provider ready version=%s",LYRA_PLUGIN_VERSION);
+    return backend.api.user ? 0 : -1;
 }
-static int (*native_command)(void*,const LyraPlaybackCommandV3*)=nullptr;
-static int command(void *user,const LyraPlaybackCommandV3 *c){return native_command?native_command(user,c):-1;}
-static int init(const LyraHostV3 *host){backend=make_engine_backend();platform_host=host;refresh_screen_throttle();native_transition=backend.transition;
- if(native_transition)transition_api={sizeof(transition_api),LYRA_INTERFACE_VERSION,nullptr,transition_request};
- native_command=backend.api.command;backend.api.command=command;
- if(backend.set_screen_query){backend.set_screen_query(backend.api.user,screen_active_query,nullptr);}
- lyra_log(LyraLogInfo,"Lyra","ffmpeg playback provider ready version=%s",LYRA_PLUGIN_VERSION);return backend.api.user?0:-1;}
-static void shutdown(const LyraHostV3*){if(backend.destroy)backend.destroy(backend.api.user);backend={};platform_host=nullptr;native_command=nullptr;native_transition=nullptr;transition_api={};screen_throttle=false;}
-static const void* query(const LyraHostV3*,uint32_t id,uint32_t version,uint32_t size){if(id==LYRA_INTERFACE_AUDIO_TRANSITION&&version==LYRA_INTERFACE_VERSION&&size==sizeof(LyraAudioTransitionV3))return native_transition?&transition_api:nullptr;return id==LYRA_INTERFACE_PLAYBACK_PROVIDER&&version==LYRA_INTERFACE_VERSION&&size==sizeof(backend.api)?&backend.api:nullptr;}
+static void shutdown(const LyraHostV3*) {
+    if (backend.destroy) backend.destroy(backend.api.user);
+    backend = {};
+}
+static const void* query(const LyraHostV3*, uint32_t id, uint32_t version, uint32_t size) {
+    if (version != LYRA_INTERFACE_VERSION) return nullptr;
+    if (id == LYRA_INTERFACE_AUDIO_TRANSITION && size == sizeof(LyraAudioTransitionV3)) return backend.transition;
+    return id == LYRA_INTERFACE_PLAYBACK_PROVIDER && size == sizeof(backend.api) ? &backend.api : nullptr;
+}
 extern "C" __attribute__((visibility("default"))) int lyra_plugin_init(const LyraHostV3* host,LyraPluginV3* out){
- if(!host||host->size!=sizeof(*host)||host->abi!=LYRA_PLUGIN_ABI||!out)return -1;*out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id=LYRA_PLUGIN_ID;out->kind="playback";out->config_tables="audio_transition,system";out->version=LYRA_PLUGIN_VERSION;out->init=init;out->shutdown=shutdown;out->query_interface=query;return 0;
+ if(!host||host->size!=sizeof(*host)||host->abi!=LYRA_PLUGIN_ABI||!out)return -1;*out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id=LYRA_PLUGIN_ID;out->kind="playback";out->config_tables="audio_transition";out->version=LYRA_PLUGIN_VERSION;out->init=init;out->shutdown=shutdown;out->query_interface=query;return 0;
 }
