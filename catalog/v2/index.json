@@ -21,7 +21,8 @@
       "tags": "ffmpeg 插件 plugin decoder 解码器 引擎 播放 ape wavpack alac flac mp3 aac vorbis opus ac3 eac3 eac3-joc atmos 杜比 无损",
       "title": "FFmpeg 播放引擎（精简版）",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.4.9/official.ffmpeg-1.4.9-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-v1.4.9/official.ffmpeg-1.4.9-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg/1.4.9/official.ffmpeg-1.4.9-android-arm64-v8a.zip"
       ],
       "version": "1.4.9"
     },
@@ -46,7 +47,8 @@
       "tags": "ffmpeg 插件 plugin decoder 解码器 引擎 播放 ape wavpack alac flac mp3 aac vorbis opus ac3 eac3 eac3-joc atmos 杜比 无损",
       "title": "FFmpeg 播放引擎（音频完整版）",
       "urls": [
-        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-full-v1.4.9/official.ffmpeg-full-1.4.9-android-arm64-v8a.zip"
+        "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/ffmpeg-full-v1.4.9/official.ffmpeg-full-1.4.9-android-arm64-v8a.zip",
+        "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.ffmpeg-full/1.4.9/official.ffmpeg-full-1.4.9-android-arm64-v8a.zip"
       ],
       "version": "1.4.9"
     },
