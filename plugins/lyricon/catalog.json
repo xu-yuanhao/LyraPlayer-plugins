@@ -10,7 +10,8 @@
   "tags": "Lyricon 词幕 状态栏 歌词 逐字 译文 注音",
   "package": "official.lyricon-1.1.0-android-arm64-v8a.zip",
   "urls": [
-    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/lyricon-v1.1.0/official.lyricon-1.1.0-android-arm64-v8a.zip"
+    "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/lyricon-v1.1.0/official.lyricon-1.1.0-android-arm64-v8a.zip",
+    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.lyricon/1.1.0/official.lyricon-1.1.0-android-arm64-v8a.zip"
   ],
   "author": "Xu YuanHao",
   "author_url": "https://github.com/xu-yuanhao",
