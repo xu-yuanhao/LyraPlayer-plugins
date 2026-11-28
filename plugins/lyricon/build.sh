@@ -29,7 +29,7 @@ python3 - "$root" <<'PY'
 from pathlib import Path
 from zipfile import ZipFile,ZIP_DEFLATED
 import sys
-root=Path(sys.argv[1]);out=root/'dist/official.lyricon-1.0.0-android-arm64-v8a.zip'
+root=Path(sys.argv[1]);out=root/'dist/official.lyricon-1.1.0-android-arm64-v8a.zip'
 with ZipFile(out,'w',ZIP_DEFLATED,compresslevel=9) as z:
  for n in ['manifest.toml','plugin.so','LICENSE.txt','metadata.json','README.md','CHANGELOG.md','UPSTREAM.md','icon.png']:z.write(root/'dist/lyricon'/n,n)
 print(out, out.stat().st_size, 'bytes')
