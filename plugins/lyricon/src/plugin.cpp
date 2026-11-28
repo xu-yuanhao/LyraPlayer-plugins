@@ -1,7 +1,6 @@
 #include "plugin/lyra_plugin.h"
 #include "plugin/media_contracts.h"
 #include "plugin/settings_contracts.h"
-#include "plugin/store_contracts.h"
 #include "bridge_dex.h"
 #include <android/looper.h>
 #include <jni.h>
@@ -30,43 +29,25 @@ std::string text(const LyraLyricsInterfaceV3 *l,int line,int kind,int part=0){
     std::string s(n,0);if(l->text(l->user,line,kind,part,s.data(),n)!=n || s.back()!=0)return {};s.pop_back();return s;
 }
 enum class DisplayMode : unsigned char { Original, Translation, Phonetic };
-constexpr char mode_key[] = "display_mode";
 constexpr char settings_title[] = "词幕";
 constexpr int64_t settings_count = 2, settings_page = 0;
 struct Plugin {
     const LyraHostV3 *host=nullptr;JavaVM *vm=nullptr;jobject bridge=nullptr;
-    jmethodID document=nullptr,state=nullptr,stop=nullptr;
+    jmethodID document=nullptr,state=nullptr,stop=nullptr,save_mode=nullptr;
     ALooper *looper=nullptr;int timer=-1,period=0;
     int64_t track=-2,duration=-1;uint64_t revision=0;
     std::string title,artist,album;
-    const LyraStoreInterfaceV3 *store=nullptr;
     DisplayMode mode=DisplayMode::Original;
     int64_t settings_revision=0, row_flags=0;
     bool document_dirty=false;
     LyraSettingsPageV3 settings{sizeof(settings),LYRA_INTERFACE_VERSION,this,settings_request};
 
-    bool store_mode(bool write, DisplayMode &value) {
-        if (!store) return false;
-        LyraFieldV3 fields[] = {
-            {LYRA_STORE_KEY, LYRA_FIELD_UTF8, 0, sizeof(mode_key), mode_key},
-            {LYRA_STORE_VALUE, LYRA_FIELD_BYTES, 0, sizeof(value), &value},
-        };
-        LyraMessageV3 message{sizeof(message),write?2u:1u,
-                              write?LYRA_STORE_SET:LYRA_STORE_GET,fields};
-        LyraFieldV3 returned[2]{};
-        LyraReplyV3 reply{sizeof(reply),2,0,0,returned};
-        if (store->request(store->user,&message,&reply)!=LYRA_MESSAGE_OK || reply.status || reply.field_count>2)
-            return false;
-        if (write) return true;
-        for (uint32_t i=0;i<reply.field_count;++i) {
-            const auto &field=returned[i];
-            if (field.tag!=LYRA_STORE_VALUE || field.type!=LYRA_FIELD_BYTES ||
-                field.bytes!=sizeof(value) || !field.data) continue;
-            DisplayMode previous;
-            std::memcpy(&previous,field.data,sizeof(previous));
-            if (previous<=DisplayMode::Phonetic) value=previous;
-        }
-        return true;
+    bool persist_mode(DisplayMode value) {
+        Env j(vm);
+        if (!j.env || !bridge) return false;
+        bool saved=j.env->CallBooleanMethod(bridge,save_mode,jint(value));
+        if (j.env->ExceptionCheck()) { j.env->ExceptionClear(); return false; }
+        return saved;
     }
 
     static int settings_request(void *user,const LyraMessageV3 *message,LyraReplyV3 *reply) {
@@ -103,7 +84,7 @@ struct Plugin {
         const auto selected=index==0?DisplayMode::Translation:DisplayMode::Phonetic;
         if (operation==LYRA_SETTINGS_ACTIVATE) {
             auto next=self.mode==selected?DisplayMode::Original:selected;
-            if (!self.store_mode(true,next)) return result(LYRA_MESSAGE_UNSUPPORTED);
+            if (!self.persist_mode(next)) return result(LYRA_MESSAGE_UNSUPPORTED);
             self.mode=next;
             ++self.settings_revision;
             self.document_dirty=true;
@@ -160,11 +141,17 @@ struct Plugin {
             state=e->GetMethodID(klass,"setState","(JJJZ)I");
             stop=e->GetMethodID(klass,"stop","()V");
             jmethodID supported=e->GetMethodID(klass,"supported","()Z");
-            if (!create || !document || !state || !stop || !supported || e->ExceptionCheck()) break;
+            auto load_mode=e->GetMethodID(klass,"loadMode","()I");
+            save_mode=e->GetMethodID(klass,"saveMode","(I)Z");
+            if (!load_mode || !save_mode || !create || !document || !state || !stop || !supported || e->ExceptionCheck()) break;
             jobject value=e->NewObject(klass,create,context);
             if (!value || e->ExceptionCheck()) break;
             bridge=e->NewGlobalRef(value);
-            if(bridge)ready=e->CallBooleanMethod(value,supported)?1:0;
+            if(bridge) {
+                const auto saved=e->CallIntMethod(value,load_mode);
+                if(saved>=0 && saved<=int(DisplayMode::Phonetic))mode=DisplayMode(saved);
+                if(!e->ExceptionCheck())ready=e->CallBooleanMethod(value,supported)?1:0;
+            }
         } while(false);
         if (e->ExceptionCheck()) {e->ExceptionClear();ready=-1;}
         e->PopLocalFrame(nullptr);
@@ -238,12 +225,6 @@ struct Plugin {
 std::unique_ptr<Plugin> instance;
 int init(const LyraHostV3 *h){
     auto p=std::make_unique<Plugin>();p->host=h;int supported=p->java(h);if(supported<0)return -1;
-    const auto *store=static_cast<const LyraStoreInterfaceV3 *>(
-        h->query_interface(h->user,LYRA_INTERFACE_STORE,LYRA_INTERFACE_VERSION,sizeof(LyraStoreInterfaceV3)));
-    if (store && store->size==sizeof(*store) && store->version==LYRA_INTERFACE_VERSION && store->request) {
-        p->store=store;
-        p->store_mode(false,p->mode);
-    }
     if(!supported){instance=std::move(p);return 0;}
     p->looper=ALooper_forThread();if(!p->looper)return -1;ALooper_acquire(p->looper);
     p->timer=timerfd_create(CLOCK_MONOTONIC,TFD_NONBLOCK|TFD_CLOEXEC);
@@ -253,9 +234,9 @@ int init(const LyraHostV3 *h){
 }
 extern "C" __attribute__((visibility("default"))) int lyra_plugin_init(const LyraHostV3 *h,LyraPluginV3 *out){
     if(!h || h->size!=sizeof(*h) || h->abi!=LYRA_PLUGIN_ABI || !h->query_interface || !out)return -1;
-    *out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id="official.lyricon";out->kind="lyricon-provider";out->version="1.1.0";
+    *out={};out->size=sizeof(*out);out->abi=LYRA_PLUGIN_ABI;out->id="official.lyricon";out->kind="lyricon-provider";out->version="1.1.1";
     out->query_interface=[](const LyraHostV3*,uint32_t id,uint32_t version,uint32_t size)->const void*{
-        if (instance && instance->store && id==LYRA_INTERFACE_SETTINGS_PAGE &&
+        if (instance && id==LYRA_INTERFACE_SETTINGS_PAGE &&
             version==LYRA_INTERFACE_VERSION && size==sizeof(LyraSettingsPageV3))
             return &instance->settings;
         return nullptr;

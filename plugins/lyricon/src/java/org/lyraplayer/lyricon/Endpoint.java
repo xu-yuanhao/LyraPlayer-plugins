@@ -20,12 +20,21 @@ public final class Endpoint {
     private final Protocol protocol;
     private Document document;
 
+    private final android.content.SharedPreferences preferences;
+
     public Endpoint(Context source) {
         Context app=source.getApplicationContext();Context context=app==null?source:app;
+        preferences=context.getSharedPreferences("official.lyricon",Context.MODE_PRIVATE);
         if(Build.VERSION.SDK_INT<27){worker=null;protocol=null;return;}
         worker=Executors.newSingleThreadScheduledExecutor(r->{Thread t=new Thread(r,"LyraLyricon");t.setDaemon(true);return t;});
         protocol=new Protocol(context,worker);
         worker.scheduleWithFixedDelay(this::pump,0,50,TimeUnit.MILLISECONDS);
+    }
+    public int loadMode(){return preferences.getInt("display_mode",0);}
+    public boolean saveMode(int mode){
+        if(mode<0||mode>2)return false;
+        preferences.edit().putInt("display_mode",mode).apply();
+        return true;
     }
     public boolean supported(){return protocol!=null;}
     public synchronized void setDocument(byte[] bytes){if(!stopped)staged=bytes;}
