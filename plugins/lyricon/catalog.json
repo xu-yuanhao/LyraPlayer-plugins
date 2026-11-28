@@ -11,8 +11,7 @@
   "package": "official.lyricon-1.1.1-android-arm64-v8a.zip",
   "urls": [
     "https://github.com/xu-yuanhao/LyraPlayer-plugins/releases/download/lyricon-v1.1.1/official.lyricon-1.1.1-android-arm64-v8a.zip",
-    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.lyricon/1.1.1/official.lyricon-1.1.1-android-arm64-v8a.zip",
-    "https://gitee.com/please-call-me-xu-zong/LyraPlayer-plugins/releases/download/lyricon-v1.1.1/official.lyricon-1.1.1-android-arm64-v8a.zip"
+    "https://gitlab.com/api/v4/projects/87466640/packages/generic/official.lyricon/1.1.1/official.lyricon-1.1.1-android-arm64-v8a.zip"
   ],
   "author": "Xu YuanHao",
   "author_url": "https://github.com/xu-yuanhao",
