@@ -1,0 +1,12 @@
+id = "chun.lyra.sync"
+version = "0.3.4"
+abi = 3
+type = "frame"
+entry = "plugin.so"
+title = "Lyra Player 同步插件"
+description = "局域网设备间音乐同步：PSK 配对、分块校验传输、断点续传、完成后刷新曲库"
+author = "chun"
+license = "MIT"
+platform = "android"
+arch = "arm64-v8a"
+tags = "sync transfer lan music 同步 传输"
